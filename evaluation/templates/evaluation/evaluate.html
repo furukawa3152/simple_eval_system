@@ -1,0 +1,18 @@
+{% extends "evaluation/base.html" %}
+
+{% block title %}評価入力{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+<p class="meta">{{ description }}</p>
+
+{% if no_targets %}
+    <p>評価対象の部下ユーザーがまだ登録されていません。</p>
+{% else %}
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="button">保存</button>
+    </form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "evaluation/base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+<p class="meta">{{ description }}</p>
+
+<form method="post">
+    {% csrf_token %}
+
+    {% if show_goal_pairs %}
+        <div class="goal-grid">
+            <section class="goal-pair">
+                <div class="goal-reference">
+                    <h3>部署目標: 理念</h3>
+                    <div>{{ department_goal.philosophy|default:"未入力"|linebreaksbr }}</div>
+                </div>
+                <div class="goal-input">
+                    <label for="{{ form.philosophy_goal.id_for_label }}">{{ form.philosophy_goal.label }}</label>
+                    {{ form.philosophy_goal }}
+                    {% if form.philosophy_goal.errors %}
+                        <div class="field-errors">{{ form.philosophy_goal.errors }}</div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="goal-pair">
+                <div class="goal-reference">
+                    <h3>部署目標: 経営</h3>
+                    <div>{{ department_goal.finance|default:"未入力"|linebreaksbr }}</div>
+                </div>
+                <div class="goal-input">
+                    <label for="{{ form.finance_goal.id_for_label }}">{{ form.finance_goal.label }}</label>
+                    {{ form.finance_goal }}
+                    {% if form.finance_goal.errors %}
+                        <div class="field-errors">{{ form.finance_goal.errors }}</div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="goal-pair">
+                <div class="goal-reference">
+                    <h3>部署目標: 安全</h3>
+                    <div>{{ department_goal.safety|default:"未入力"|linebreaksbr }}</div>
+                </div>
+                <div class="goal-input">
+                    <label for="{{ form.safety_goal.id_for_label }}">{{ form.safety_goal.label }}</label>
+                    {{ form.safety_goal }}
+                    {% if form.safety_goal.errors %}
+                        <div class="field-errors">{{ form.safety_goal.errors }}</div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="goal-pair">
+                <div class="goal-reference">
+                    <h3>部署目標: 連携</h3>
+                    <div>{{ department_goal.cooperation|default:"未入力"|linebreaksbr }}</div>
+                </div>
+                <div class="goal-input">
+                    <label for="{{ form.cooperation_goal.id_for_label }}">{{ form.cooperation_goal.label }}</label>
+                    {{ form.cooperation_goal }}
+                    {% if form.cooperation_goal.errors %}
+                        <div class="field-errors">{{ form.cooperation_goal.errors }}</div>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="button">保存</button>
+        </div>
+    {% else %}
+        {{ form.as_p }}
+        <button type="submit" class="button">保存</button>
+    {% endif %}
+</form>
+{% endblock %}

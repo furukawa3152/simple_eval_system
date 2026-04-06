@@ -1,0 +1,34 @@
+{% extends "evaluation/base.html" %}
+
+{% block title %}メニュー{% endblock %}
+
+{% block content %}
+<h1>メニュー</h1>
+<p class="meta">{{ user.first_name }} さん / {{ user.department }} / {% if user.is_manager %}上長{% else %}部下{% endif %}</p>
+
+<div class="grid">
+    {% if user.is_manager %}
+        <div class="menu-item">
+            <h2>部署目標入力</h2>
+            <p>部署全体の理念・経営・安全・連携の目標を登録します。</p>
+            <a href="{% url 'dept_goal' %}">開く</a>
+        </div>
+        <div class="menu-item">
+            <h2>評価入力</h2>
+            <p>同じ部署の部下に対する評価を入力します。</p>
+            <a href="{% url 'evaluate' %}">開く</a>
+        </div>
+    {% else %}
+        <div class="menu-item">
+            <h2>個人目標入力</h2>
+            <p>自分の目標を4項目で記録します。</p>
+            <a href="{% url 'my_goal' %}">開く</a>
+        </div>
+        <div class="menu-item">
+            <h2>達成状況入力</h2>
+            <p>目標に対する実績や振り返りを入力します。</p>
+            <a href="{% url 'achievement' %}">開く</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

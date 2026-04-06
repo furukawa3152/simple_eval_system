@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}人事評価システム{% endblock %}</title>
+    <style>
+        :root {
+            --bg: #f4f1ea;
+            --card: #fffdf8;
+            --line: #d7cdbf;
+            --text: #2b251f;
+            --accent: #245c4f;
+            --accent-soft: #e1eee9;
+            --soft: #f8fbf9;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Yu Gothic UI", sans-serif;
+            color: var(--text);
+            background: linear-gradient(135deg, #efe8da 0%, #f7f4ee 100%);
+        }
+        .container {
+            width: min(1200px, calc(100% - 32px));
+            margin: 32px auto;
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(60, 46, 22, 0.08);
+        }
+        h1, h2, h3 { margin-top: 0; }
+        nav {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        nav a, .button {
+            text-decoration: none;
+            color: white;
+            background: var(--accent);
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        nav form { margin: 0; }
+        .button-secondary {
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
+        form p { margin-bottom: 16px; }
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: #fff;
+            font: inherit;
+        }
+        textarea { resize: vertical; }
+        ul.messages {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 16px;
+        }
+        ul.messages li {
+            padding: 12px 14px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            background: #edf7f3;
+            border: 1px solid #b9d8cc;
+        }
+        .grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+        .menu-item {
+            padding: 18px;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: #fff;
+        }
+        .meta {
+            color: #6b6257;
+            font-size: 14px;
+        }
+        .field-errors {
+            margin-top: 8px;
+            color: #a53f2b;
+            font-size: 13px;
+        }
+        .goal-grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin-top: 20px;
+        }
+        .goal-pair {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 16px;
+            align-items: start;
+            padding: 18px;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: #fff;
+        }
+        .goal-reference {
+            padding: 16px;
+            border-radius: 14px;
+            background: var(--soft);
+            border: 1px solid #dce8e2;
+        }
+        .goal-input textarea {
+            min-height: 180px;
+        }
+        .form-actions {
+            margin-top: 20px;
+        }
+        @media (max-width: 900px) {
+            .goal-grid {
+                grid-template-columns: 1fr;
+            }
+            .goal-pair {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% if user.is_authenticated %}
+            <nav>
+                <a href="{% url 'menu' %}">メニュー</a>
+                {% if user.is_manager %}
+                    <a href="{% url 'dept_goal' %}">部署目標</a>
+                    <a href="{% url 'evaluate' %}">評価入力</a>
+                {% else %}
+                    <a href="{% url 'my_goal' %}">個人目標</a>
+                    <a href="{% url 'achievement' %}">達成状況</a>
+                {% endif %}
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="button button-secondary">ログアウト</button>
+                </form>
+            </nav>
+        {% endif %}
+
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <div class="card">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</body>
+</html>

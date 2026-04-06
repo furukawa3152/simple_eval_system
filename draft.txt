@@ -1,0 +1,117 @@
+全体設計（超シンプル版）
+登場人物
+役割	できること
+部下	自分の目標入力、達成状況入力
+上長	部署目標入力、部下の評価入力
+管理者	CSVでユーザー管理
+画面構成（これだけ）
+URL	画面	権限
+/login	ログイン	全員
+/menu	メニュー	全員
+/dept_goal	部署目標入力	上長
+/my_goal	個人目標入力	部下
+/achievement	達成状況入力	部下
+/evaluate	評価入力	上長
+
+→ 画面は6個だけ
+
+データ設計（ここが一番重要）
+① ユーザーマスタ（CSVから作る）
+
+CSV（users.csv）
+
+id	名前	部署	上長フラグ	パスワード
+001	山田	医事課	1	1234
+002	佐藤	医事課	0	1234
+
+Django起動時にCSV読み込んでUserテーブル作成。
+
+② 部署目標テーブル
+id	部署	年度	理念	経営	安全	連携
+③ 個人目標テーブル
+id	user	年度	理念目標	経営目標	安全目標	連携目標
+④ 達成状況テーブル
+id	user	年度	理念達成	経営達成	安全達成	連携達成
+⑤ 評価テーブル
+id	user	年度	理念評価	経営評価	安全評価	連携評価
+Djangoモデル（models.py イメージ）
+from django.db import models
+from django.contrib.auth.models import AbstractUser
+
+class User(AbstractUser):
+    department = models.CharField(max_length=100)
+    is_manager = models.BooleanField(default=False)
+
+class DepartmentGoal(models.Model):
+    department = models.CharField(max_length=100)
+    year = models.IntegerField()
+    philosophy = models.TextField()
+    finance = models.TextField()
+    safety = models.TextField()
+    cooperation = models.TextField()
+
+class PersonalGoal(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    year = models.IntegerField()
+    philosophy_goal = models.TextField()
+    finance_goal = models.TextField()
+    safety_goal = models.TextField()
+    cooperation_goal = models.TextField()
+
+class Achievement(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    year = models.IntegerField()
+    philosophy_result = models.TextField()
+    finance_result = models.TextField()
+    safety_result = models.TextField()
+    cooperation_result = models.TextField()
+
+class Evaluation(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    year = models.IntegerField()
+    philosophy_eval = models.TextField()
+    finance_eval = models.TextField()
+    safety_eval = models.TextField()
+    cooperation_eval = models.TextField()
+CSV読み込み処理（初回起動時）
+# management/commands/import_users.py
+
+import csv
+from django.core.management.base import BaseCommand
+from app.models import User
+
+class Command(BaseCommand):
+    def handle(self, *args, **kwargs):
+        with open('users.csv', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                user, created = User.objects.get_or_create(
+                    username=row['id'],
+                    defaults={
+                        'first_name': row['名前'],
+                        'department': row['部署'],
+                        'is_manager': bool(int(row['上長フラグ']))
+                    }
+                )
+                user.set_password(row['パスワード'])
+                user.save()
+python manage.py import_users
+
+でユーザー作成。
+
+業務の流れ（超重要）
+① 管理者
+   CSV置く → import_users
+
+② 上長
+   部署目標入力
+
+③ 部下
+   個人目標入力
+
+④ 数ヶ月後
+   部下
+   達成状況入力
+
+⑤ 上長
+   評価入力

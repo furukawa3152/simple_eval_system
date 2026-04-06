@@ -1,0 +1,13 @@
+{% extends "evaluation/base.html" %}
+
+{% block title %}ログイン{% endblock %}
+
+{% block content %}
+<h1>ログイン</h1>
+<p class="meta">社員IDとパスワードでログインします。</p>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="button">ログイン</button>
+</form>
+{% endblock %}
