@@ -1,9 +1,12 @@
 from datetime import datetime
 from functools import wraps
+from pathlib import Path
 
 from django.contrib import messages
 from django.contrib.auth import login
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 from django.shortcuts import redirect, render
 
 from .forms import (
@@ -11,10 +14,12 @@ from .forms import (
     AppSettingForm,
     DepartmentGoalForm,
     EvaluationForm,
+    InitialPasswordChangeForm,
     LoginForm,
     PersonalGoalForm,
 )
 from .models import Achievement, AppSetting, DepartmentGoal, Evaluation, PersonalGoal, User
+from .user_sync import update_user_password_in_csv
 
 
 def get_app_setting():
@@ -34,18 +39,48 @@ def manager_required(view_func):
 
 
 def home(request):
-    return redirect('menu' if request.user.is_authenticated else 'login')
+    if not request.user.is_authenticated:
+        return redirect('login')
+    if request.user.require_password_change:
+        return redirect('initial_password_change')
+    return redirect('menu')
 
 
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('menu')
+        return redirect('initial_password_change' if request.user.require_password_change else 'menu')
 
     form = LoginForm(request, data=request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        login(request, form.get_user())
-        return redirect('menu')
+        user = form.get_user()
+        login(request, user)
+        return redirect('initial_password_change' if user.require_password_change else 'menu')
     return render(request, 'evaluation/login.html', {'form': form})
+
+
+@login_required
+def initial_password_change_view(request):
+    if not request.user.require_password_change:
+        return redirect('menu')
+
+    form = InitialPasswordChangeForm(request.user, request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        new_password = form.cleaned_data['new_password1']
+        csv_path = Path(settings.BASE_DIR) / 'users.csv'
+        update_user_password_in_csv(csv_path, request.user.username, new_password, require_password_change=False)
+        request.user.set_password(new_password)
+        request.user.require_password_change = False
+        request.user.save(update_fields=['password', 'require_password_change'])
+        update_session_auth_hash(request, request.user)
+        messages.success(request, 'パスワードを変更しました。')
+        return redirect('menu')
+
+    context = {
+        'title': '初回パスワード変更',
+        'description': '初回ログインのため、新しいパスワードを設定してください。',
+        'form': form,
+    }
+    return render(request, 'evaluation/simple_form.html', context)
 
 
 @login_required

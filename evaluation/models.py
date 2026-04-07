@@ -5,6 +5,7 @@ from django.db import models
 class User(AbstractUser):
     department = models.CharField(max_length=100, verbose_name='部署')
     is_manager = models.BooleanField(default=False, verbose_name='上長フラグ')
+    require_password_change = models.BooleanField(default=True, verbose_name='初回パスワード変更')
 
     def __str__(self):
         return f'{self.username} {self.last_name}{self.first_name}'.strip()

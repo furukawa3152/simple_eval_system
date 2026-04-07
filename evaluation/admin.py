@@ -7,11 +7,29 @@ from .models import Achievement, DepartmentGoal, Evaluation, PersonalGoal, User
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     fieldsets = BaseUserAdmin.fieldsets + (
-        ('追加情報', {'fields': ('department', 'is_manager')}),
+        ('追加情報', {'fields': ('department', 'is_manager', 'require_password_change')}),
     )
-    list_display = ('username', 'first_name', 'last_name', 'department', 'is_manager', 'is_staff', 'is_active')
-    list_filter = ('department', 'is_manager', 'is_staff', 'is_active')
-    readonly_fields = ('username', 'first_name', 'last_name', 'department', 'is_manager', 'is_staff', 'is_active')
+    list_display = (
+        'username',
+        'first_name',
+        'last_name',
+        'department',
+        'is_manager',
+        'require_password_change',
+        'is_staff',
+        'is_active',
+    )
+    list_filter = ('department', 'is_manager', 'require_password_change', 'is_staff', 'is_active')
+    readonly_fields = (
+        'username',
+        'first_name',
+        'last_name',
+        'department',
+        'is_manager',
+        'require_password_change',
+        'is_staff',
+        'is_active',
+    )
 
     def has_add_permission(self, request):
         return False

@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import SetPasswordForm
 
 from .models import Achievement, AppSetting, DepartmentGoal, PersonalGoal, User
 
@@ -7,6 +8,17 @@ from .models import Achievement, AppSetting, DepartmentGoal, PersonalGoal, User
 class LoginForm(AuthenticationForm):
     username = forms.CharField(label='社員ID')
     password = forms.CharField(label='パスワード', widget=forms.PasswordInput)
+
+
+class InitialPasswordChangeForm(SetPasswordForm):
+    new_password1 = forms.CharField(
+        label='新しいパスワード',
+        widget=forms.PasswordInput,
+    )
+    new_password2 = forms.CharField(
+        label='新しいパスワード（確認）',
+        widget=forms.PasswordInput,
+    )
 
 
 class AppSettingForm(forms.ModelForm):
