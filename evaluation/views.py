@@ -68,6 +68,27 @@ AI_FIELD_CONFIG = {
 }
 
 
+def save_evaluation_form(form, target_user, current_year):
+    return Evaluation.objects.update_or_create(
+        user=target_user,
+        year=current_year,
+        defaults={
+            'philosophy_eval': form.cleaned_data['philosophy_eval'],
+            'finance_eval': form.cleaned_data['finance_eval'],
+            'safety_eval': form.cleaned_data['safety_eval'],
+            'cooperation_eval': form.cleaned_data['cooperation_eval'],
+            'philosophy_manager_eval': form.cleaned_data['philosophy_manager_eval'],
+            'finance_manager_eval': form.cleaned_data['finance_manager_eval'],
+            'safety_manager_eval': form.cleaned_data['safety_manager_eval'],
+            'cooperation_manager_eval': form.cleaned_data['cooperation_manager_eval'],
+            'philosophy_score': form.cleaned_data['philosophy_score'],
+            'finance_score': form.cleaned_data['finance_score'],
+            'safety_score': form.cleaned_data['safety_score'],
+            'cooperation_score': form.cleaned_data['cooperation_score'],
+        },
+    )
+
+
 def render_prompt(app_setting, *, selected_user, category_key, department_goal, personal_goal, achievement):
     config = AI_FIELD_CONFIG[category_key]
     return app_setting.ai_prompt_template.format(
@@ -248,7 +269,15 @@ def evaluate_view(request):
     personal_goal = None
     achievement = None
 
-    if request.method == 'POST':
+    action = request.POST.get('action') if request.method == 'POST' else ''
+    current_target_user = None
+
+    if request.method == 'POST' and action == 'switch_user':
+        current_target_id = request.POST.get('current_target_user')
+        if current_target_id:
+            current_target_user = evaluation_targets.filter(pk=current_target_id).first()
+            selected_user = current_target_user
+    elif request.method == 'POST':
         user_id = request.POST.get('user')
         if user_id:
             selected_user = evaluation_targets.filter(pk=user_id).first()
@@ -290,7 +319,10 @@ def evaluate_view(request):
             initial['user'] = selected_user
 
     form_data = request.POST.copy() if request.method == 'POST' else None
-    action = request.POST.get('action') if request.method == 'POST' else ''
+
+    if request.method == 'POST' and action == 'switch_user' and current_target_user:
+        form_data = request.POST.copy()
+        form_data['user'] = str(current_target_user.pk)
 
     if action.startswith('generate_ai_') and selected_user:
         category_key = action.removeprefix('generate_ai_')
@@ -318,26 +350,19 @@ def evaluate_view(request):
 
     form = EvaluationForm(form_data or request.POST or None, initial=initial, user_queryset=evaluation_targets)
 
+    if request.method == 'POST' and action == 'switch_user' and current_target_user:
+        if form.is_valid():
+            save_evaluation_form(form, current_target_user, current_year)
+            messages.success(request, '入力途中の評価を保存しました。')
+            next_user_id = request.POST.get('user')
+            if next_user_id:
+                return redirect(f'{request.path}?user={next_user_id}')
+        else:
+            messages.error(request, '保存できない入力があります。内容を確認してください。')
+
     if request.method == 'POST' and action == 'save' and form.is_valid():
         evaluation_user = form.cleaned_data['user']
-        Evaluation.objects.update_or_create(
-            user=evaluation_user,
-            year=current_year,
-            defaults={
-                'philosophy_eval': form.cleaned_data['philosophy_eval'],
-                'finance_eval': form.cleaned_data['finance_eval'],
-                'safety_eval': form.cleaned_data['safety_eval'],
-                'cooperation_eval': form.cleaned_data['cooperation_eval'],
-                'philosophy_manager_eval': form.cleaned_data['philosophy_manager_eval'],
-                'finance_manager_eval': form.cleaned_data['finance_manager_eval'],
-                'safety_manager_eval': form.cleaned_data['safety_manager_eval'],
-                'cooperation_manager_eval': form.cleaned_data['cooperation_manager_eval'],
-                'philosophy_score': form.cleaned_data['philosophy_score'],
-                'finance_score': form.cleaned_data['finance_score'],
-                'safety_score': form.cleaned_data['safety_score'],
-                'cooperation_score': form.cleaned_data['cooperation_score'],
-            },
-        )
+        save_evaluation_form(form, evaluation_user, current_year)
         messages.success(request, '評価を保存しました。')
         return redirect(f'{request.path}?user={evaluation_user.pk}')
 

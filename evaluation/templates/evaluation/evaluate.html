@@ -14,10 +14,16 @@
 {% else %}
     <form method="post">
         {% csrf_token %}
+        <input type="hidden" name="action" id="evaluation-action" value="save">
+        <input type="hidden" name="current_target_user" value="{% if selected_user %}{{ selected_user.pk }}{% endif %}">
 
         <p>
             {{ form.user.label_tag }}
-            {{ form.user }}
+            <select name="user" id="{{ form.user.id_for_label }}" onchange="document.getElementById('evaluation-action').value='switch_user'; this.form.submit();">
+                {% for value, label in form.user.field.choices %}
+                    <option value="{{ value }}"{% if form.user.value|stringformat:'s' == value|stringformat:'s' %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
             {% if form.user.errors %}
                 <div class="field-errors">{{ form.user.errors }}</div>
             {% endif %}
@@ -46,7 +52,7 @@
                         {% if form.philosophy_eval.errors %}
                             <div class="field-errors">{{ form.philosophy_eval.errors }}</div>
                         {% endif %}
-                        <button type="submit" name="action" value="generate_ai_philosophy" class="button inline-button">AI評価生成</button>
+                        <button type="submit" onclick="document.getElementById('evaluation-action').value='generate_ai_philosophy';" class="button inline-button">AI評価生成</button>
                     </div>
                     <div class="evaluation-cell">
                         <label for="{{ form.philosophy_manager_eval.id_for_label }}">{{ form.philosophy_manager_eval.label }}</label>
@@ -83,7 +89,7 @@
                         {% if form.finance_eval.errors %}
                             <div class="field-errors">{{ form.finance_eval.errors }}</div>
                         {% endif %}
-                        <button type="submit" name="action" value="generate_ai_finance" class="button inline-button">AI評価生成</button>
+                        <button type="submit" onclick="document.getElementById('evaluation-action').value='generate_ai_finance';" class="button inline-button">AI評価生成</button>
                     </div>
                     <div class="evaluation-cell">
                         <label for="{{ form.finance_manager_eval.id_for_label }}">{{ form.finance_manager_eval.label }}</label>
@@ -120,7 +126,7 @@
                         {% if form.safety_eval.errors %}
                             <div class="field-errors">{{ form.safety_eval.errors }}</div>
                         {% endif %}
-                        <button type="submit" name="action" value="generate_ai_safety" class="button inline-button">AI評価生成</button>
+                        <button type="submit" onclick="document.getElementById('evaluation-action').value='generate_ai_safety';" class="button inline-button">AI評価生成</button>
                     </div>
                     <div class="evaluation-cell">
                         <label for="{{ form.safety_manager_eval.id_for_label }}">{{ form.safety_manager_eval.label }}</label>
@@ -157,7 +163,7 @@
                         {% if form.cooperation_eval.errors %}
                             <div class="field-errors">{{ form.cooperation_eval.errors }}</div>
                         {% endif %}
-                        <button type="submit" name="action" value="generate_ai_cooperation" class="button inline-button">AI評価生成</button>
+                        <button type="submit" onclick="document.getElementById('evaluation-action').value='generate_ai_cooperation';" class="button inline-button">AI評価生成</button>
                     </div>
                     <div class="evaluation-cell">
                         <label for="{{ form.cooperation_manager_eval.id_for_label }}">{{ form.cooperation_manager_eval.label }}</label>
@@ -178,7 +184,7 @@
         {% endif %}
 
         <div class="form-actions">
-            <button type="submit" name="action" value="save" class="button">保存</button>
+            <button type="submit" onclick="document.getElementById('evaluation-action').value='save';" class="button">保存</button>
         </div>
     </form>
 {% endif %}
