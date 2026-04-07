@@ -5,6 +5,9 @@
 {% block content %}
 <h1>{{ title }}</h1>
 <p class="meta">{{ description }}</p>
+{% if current_year %}
+    <div class="year-chip">対象年度: {{ current_year }}</div>
+{% endif %}
 
 <form method="post">
     {% csrf_token %}
@@ -63,6 +66,84 @@
                     {{ form.cooperation_goal }}
                     {% if form.cooperation_goal.errors %}
                         <div class="field-errors">{{ form.cooperation_goal.errors }}</div>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="button">保存</button>
+        </div>
+    {% elif show_achievement_pairs %}
+        <div class="achievement-table">
+            <section class="achievement-row">
+                <div class="achievement-cell reference">
+                    <h3>部署目標: 理念</h3>
+                    <div>{{ department_goal.philosophy|default:"未入力"|linebreaksbr }}</div>
+                </div>
+                <div class="achievement-cell reference">
+                    <h3>個人目標: 理念</h3>
+                    <div>{{ personal_goal.philosophy_goal|default:"未入力"|linebreaksbr }}</div>
+                </div>
+                <div class="achievement-cell">
+                    <label for="{{ form.philosophy_result.id_for_label }}">{{ form.philosophy_result.label }}</label>
+                    {{ form.philosophy_result }}
+                    {% if form.philosophy_result.errors %}
+                        <div class="field-errors">{{ form.philosophy_result.errors }}</div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="achievement-row">
+                <div class="achievement-cell reference">
+                    <h3>部署目標: 経営</h3>
+                    <div>{{ department_goal.finance|default:"未入力"|linebreaksbr }}</div>
+                </div>
+                <div class="achievement-cell reference">
+                    <h3>個人目標: 経営</h3>
+                    <div>{{ personal_goal.finance_goal|default:"未入力"|linebreaksbr }}</div>
+                </div>
+                <div class="achievement-cell">
+                    <label for="{{ form.finance_result.id_for_label }}">{{ form.finance_result.label }}</label>
+                    {{ form.finance_result }}
+                    {% if form.finance_result.errors %}
+                        <div class="field-errors">{{ form.finance_result.errors }}</div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="achievement-row">
+                <div class="achievement-cell reference">
+                    <h3>部署目標: 安全</h3>
+                    <div>{{ department_goal.safety|default:"未入力"|linebreaksbr }}</div>
+                </div>
+                <div class="achievement-cell reference">
+                    <h3>個人目標: 安全</h3>
+                    <div>{{ personal_goal.safety_goal|default:"未入力"|linebreaksbr }}</div>
+                </div>
+                <div class="achievement-cell">
+                    <label for="{{ form.safety_result.id_for_label }}">{{ form.safety_result.label }}</label>
+                    {{ form.safety_result }}
+                    {% if form.safety_result.errors %}
+                        <div class="field-errors">{{ form.safety_result.errors }}</div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="achievement-row">
+                <div class="achievement-cell reference">
+                    <h3>部署目標: 連携</h3>
+                    <div>{{ department_goal.cooperation|default:"未入力"|linebreaksbr }}</div>
+                </div>
+                <div class="achievement-cell reference">
+                    <h3>個人目標: 連携</h3>
+                    <div>{{ personal_goal.cooperation_goal|default:"未入力"|linebreaksbr }}</div>
+                </div>
+                <div class="achievement-cell">
+                    <label for="{{ form.cooperation_result.id_for_label }}">{{ form.cooperation_result.label }}</label>
+                    {{ form.cooperation_result }}
+                    {% if form.cooperation_result.errors %}
+                        <div class="field-errors">{{ form.cooperation_result.errors }}</div>
                     {% endif %}
                 </div>
             </section>

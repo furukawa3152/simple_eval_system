@@ -1,12 +1,19 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 
-from .models import Achievement, DepartmentGoal, PersonalGoal, User
+from .models import Achievement, AppSetting, DepartmentGoal, PersonalGoal, User
 
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(label='社員ID')
     password = forms.CharField(label='パスワード', widget=forms.PasswordInput)
+
+
+class AppSettingForm(forms.ModelForm):
+    class Meta:
+        model = AppSetting
+        fields = ['current_year']
+        labels = {'current_year': '現在年度'}
 
 
 class DepartmentGoalForm(forms.ModelForm):

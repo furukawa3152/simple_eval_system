@@ -97,6 +97,16 @@
             color: #6b6257;
             font-size: 14px;
         }
+        .year-chip {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: var(--soft);
+            border: 1px solid #dce8e2;
+            font-size: 13px;
+            color: var(--accent);
+        }
         .field-errors {
             margin-top: 8px;
             color: #a53f2b;
@@ -127,6 +137,54 @@
         .goal-input textarea {
             min-height: 180px;
         }
+        .achievement-table {
+            display: grid;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .achievement-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.1fr;
+            gap: 16px;
+            align-items: stretch;
+        }
+        .achievement-cell {
+            padding: 16px;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: #fff;
+        }
+        .achievement-cell.reference {
+            background: var(--soft);
+            border-color: #dce8e2;
+        }
+        .achievement-cell textarea {
+            min-height: 160px;
+        }
+        .evaluation-table {
+            display: grid;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .evaluation-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1.1fr;
+            gap: 16px;
+            align-items: stretch;
+        }
+        .evaluation-cell {
+            padding: 16px;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: #fff;
+        }
+        .evaluation-cell.reference {
+            background: var(--soft);
+            border-color: #dce8e2;
+        }
+        .evaluation-cell textarea {
+            min-height: 160px;
+        }
         .form-actions {
             margin-top: 20px;
         }
@@ -137,6 +195,12 @@
             .goal-pair {
                 grid-template-columns: 1fr;
             }
+            .achievement-row {
+                grid-template-columns: 1fr;
+            }
+            .evaluation-row {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -145,12 +209,12 @@
         {% if user.is_authenticated %}
             <nav>
                 <a href="{% url 'menu' %}">メニュー</a>
+                <a href="{% url 'my_goal' %}">個人目標</a>
+                <a href="{% url 'achievement' %}">達成状況</a>
                 {% if user.is_manager %}
+                    <a href="{% url 'year_setting' %}">年度設定</a>
                     <a href="{% url 'dept_goal' %}">部署目標</a>
                     <a href="{% url 'evaluate' %}">評価入力</a>
-                {% else %}
-                    <a href="{% url 'my_goal' %}">個人目標</a>
-                    <a href="{% url 'achievement' %}">達成状況</a>
                 {% endif %}
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}

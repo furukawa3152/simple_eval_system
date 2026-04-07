@@ -5,14 +5,121 @@
 {% block content %}
 <h1>{{ title }}</h1>
 <p class="meta">{{ description }}</p>
+{% if current_year %}
+    <div class="year-chip">対象年度: {{ current_year }}</div>
+{% endif %}
 
 {% if no_targets %}
     <p>評価対象の部下ユーザーがまだ登録されていません。</p>
 {% else %}
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="button">保存</button>
+
+        <p>
+            {{ form.user.label_tag }}
+            {{ form.user }}
+            {% if form.user.errors %}
+                <div class="field-errors">{{ form.user.errors }}</div>
+            {% endif %}
+        </p>
+
+        {% if selected_user %}
+            <p class="meta">{{ selected_user.first_name }} さん / {{ selected_user.department }}</p>
+
+            <div class="evaluation-table">
+                <section class="evaluation-row">
+                    <div class="evaluation-cell reference">
+                        <h3>部署目標: 理念</h3>
+                        <div>{{ department_goal.philosophy|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                    <div class="evaluation-cell reference">
+                        <h3>個人目標: 理念</h3>
+                        <div>{{ personal_goal.philosophy_goal|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                    <div class="evaluation-cell reference">
+                        <h3>達成状況: 理念</h3>
+                        <div>{{ achievement.philosophy_result|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                    <div class="evaluation-cell">
+                        <label for="{{ form.philosophy_eval.id_for_label }}">{{ form.philosophy_eval.label }}</label>
+                        {{ form.philosophy_eval }}
+                        {% if form.philosophy_eval.errors %}
+                            <div class="field-errors">{{ form.philosophy_eval.errors }}</div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="evaluation-row">
+                    <div class="evaluation-cell reference">
+                        <h3>部署目標: 経営</h3>
+                        <div>{{ department_goal.finance|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                    <div class="evaluation-cell reference">
+                        <h3>個人目標: 経営</h3>
+                        <div>{{ personal_goal.finance_goal|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                    <div class="evaluation-cell reference">
+                        <h3>達成状況: 経営</h3>
+                        <div>{{ achievement.finance_result|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                    <div class="evaluation-cell">
+                        <label for="{{ form.finance_eval.id_for_label }}">{{ form.finance_eval.label }}</label>
+                        {{ form.finance_eval }}
+                        {% if form.finance_eval.errors %}
+                            <div class="field-errors">{{ form.finance_eval.errors }}</div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="evaluation-row">
+                    <div class="evaluation-cell reference">
+                        <h3>部署目標: 安全</h3>
+                        <div>{{ department_goal.safety|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                    <div class="evaluation-cell reference">
+                        <h3>個人目標: 安全</h3>
+                        <div>{{ personal_goal.safety_goal|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                    <div class="evaluation-cell reference">
+                        <h3>達成状況: 安全</h3>
+                        <div>{{ achievement.safety_result|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                    <div class="evaluation-cell">
+                        <label for="{{ form.safety_eval.id_for_label }}">{{ form.safety_eval.label }}</label>
+                        {{ form.safety_eval }}
+                        {% if form.safety_eval.errors %}
+                            <div class="field-errors">{{ form.safety_eval.errors }}</div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="evaluation-row">
+                    <div class="evaluation-cell reference">
+                        <h3>部署目標: 連携</h3>
+                        <div>{{ department_goal.cooperation|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                    <div class="evaluation-cell reference">
+                        <h3>個人目標: 連携</h3>
+                        <div>{{ personal_goal.cooperation_goal|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                    <div class="evaluation-cell reference">
+                        <h3>達成状況: 連携</h3>
+                        <div>{{ achievement.cooperation_result|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                    <div class="evaluation-cell">
+                        <label for="{{ form.cooperation_eval.id_for_label }}">{{ form.cooperation_eval.label }}</label>
+                        {{ form.cooperation_eval }}
+                        {% if form.cooperation_eval.errors %}
+                            <div class="field-errors">{{ form.cooperation_eval.errors }}</div>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <button type="submit" class="button">保存</button>
+        </div>
     </form>
 {% endif %}
 {% endblock %}

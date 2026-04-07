@@ -1,0 +1,17 @@
+{% extends "evaluation/base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+<p class="meta">{{ description }}</p>
+{% if current_year %}
+    <div class="year-chip">現在年度: {{ current_year }}</div>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="button">保存</button>
+</form>
+{% endblock %}
