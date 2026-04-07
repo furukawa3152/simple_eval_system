@@ -73,7 +73,7 @@ def sync_users_from_csv(csv_path):
         return {
             'created': 0,
             'updated': 0,
-            'deactivated': 0,
+            'deleted': 0,
             'encoding': None,
             'path': str(csv_path),
             'missing': True,
@@ -128,11 +128,10 @@ def sync_users_from_csv(csv_path):
             row[PASSWORD_CHANGE_FIELD] = '1' if require_password_change else '0'
             csv_changed = True
 
-    deactivated_count = (
+    deleted_count = (
         user_model.objects.exclude(is_superuser=True)
         .exclude(username__in=csv_usernames)
-        .filter(is_active=True)
-        .update(is_active=False)
+        .delete()[0]
     )
 
     if csv_changed:
@@ -141,7 +140,7 @@ def sync_users_from_csv(csv_path):
     return {
         'created': created_count,
         'updated': updated_count,
-        'deactivated': deactivated_count,
+        'deleted': deleted_count,
         'encoding': encoding,
         'path': str(csv_path),
         'missing': False,

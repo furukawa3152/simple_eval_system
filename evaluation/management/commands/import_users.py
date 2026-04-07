@@ -26,7 +26,7 @@ class Command(BaseCommand):
                 'ユーザー取込完了: '
                 f"作成 {result['created']}件 / "
                 f"更新 {result['updated']}件 / "
-                f"無効化 {result['deactivated']}件 / "
+                f"削除 {result['deleted']}件 / "
                 f"encoding={result['encoding']}"
             )
         )

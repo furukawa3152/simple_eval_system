@@ -24,8 +24,24 @@ class InitialPasswordChangeForm(SetPasswordForm):
 class AppSettingForm(forms.ModelForm):
     class Meta:
         model = AppSetting
-        fields = ['current_year']
-        labels = {'current_year': '現在年度'}
+        fields = ['current_year', 'ai_endpoint', 'ai_model', 'ai_prompt_template']
+        labels = {
+            'current_year': '現在年度',
+            'ai_endpoint': 'AIエンドポイント',
+            'ai_model': 'AIモデル名',
+            'ai_prompt_template': 'AI評価プロンプト',
+        }
+        help_texts = {
+            'ai_endpoint': '例: http://172.16.98.16:8080/generate',
+            'ai_model': 'Vertex AI 側で利用可能なモデル名を設定します。',
+            'ai_prompt_template': (
+                '利用可能な変数: {year}, {user_name}, {department}, {category}, '
+                '{department_goal}, {personal_goal}, {achievement}'
+            )
+        }
+        widgets = {
+            'ai_prompt_template': forms.Textarea(attrs={'rows': 12}),
+        }
 
 
 class DepartmentGoalForm(forms.ModelForm):
@@ -84,10 +100,18 @@ class AchievementForm(forms.ModelForm):
 
 class EvaluationForm(forms.Form):
     user = forms.ModelChoiceField(queryset=User.objects.none(), label='評価対象')
-    philosophy_eval = forms.CharField(label='理念評価', required=False, widget=forms.Textarea(attrs={'rows': 4}))
-    finance_eval = forms.CharField(label='経営評価', required=False, widget=forms.Textarea(attrs={'rows': 4}))
-    safety_eval = forms.CharField(label='安全評価', required=False, widget=forms.Textarea(attrs={'rows': 4}))
-    cooperation_eval = forms.CharField(label='連携評価', required=False, widget=forms.Textarea(attrs={'rows': 4}))
+    philosophy_eval = forms.CharField(label='理念AI評価', required=False, widget=forms.Textarea(attrs={'rows': 4}))
+    finance_eval = forms.CharField(label='経営AI評価', required=False, widget=forms.Textarea(attrs={'rows': 4}))
+    safety_eval = forms.CharField(label='安全AI評価', required=False, widget=forms.Textarea(attrs={'rows': 4}))
+    cooperation_eval = forms.CharField(label='連携AI評価', required=False, widget=forms.Textarea(attrs={'rows': 4}))
+    philosophy_manager_eval = forms.CharField(label='理念上長評価', required=False, widget=forms.Textarea(attrs={'rows': 4}))
+    finance_manager_eval = forms.CharField(label='経営上長評価', required=False, widget=forms.Textarea(attrs={'rows': 4}))
+    safety_manager_eval = forms.CharField(label='安全上長評価', required=False, widget=forms.Textarea(attrs={'rows': 4}))
+    cooperation_manager_eval = forms.CharField(label='連携上長評価', required=False, widget=forms.Textarea(attrs={'rows': 4}))
+    philosophy_score = forms.IntegerField(label='理念点数', required=False, min_value=0)
+    finance_score = forms.IntegerField(label='経営点数', required=False, min_value=0)
+    safety_score = forms.IntegerField(label='安全点数', required=False, min_value=0)
+    cooperation_score = forms.IntegerField(label='連携点数', required=False, min_value=0)
 
     def __init__(self, *args, user_queryset=None, **kwargs):
         super().__init__(*args, **kwargs)

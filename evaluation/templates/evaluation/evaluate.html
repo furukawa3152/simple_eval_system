@@ -10,7 +10,7 @@
 {% endif %}
 
 {% if no_targets %}
-    <p>評価対象の部下ユーザーがまだ登録されていません。</p>
+    <p>評価対象のユーザーがまだ登録されていません。</p>
 {% else %}
     <form method="post">
         {% csrf_token %}
@@ -46,6 +46,21 @@
                         {% if form.philosophy_eval.errors %}
                             <div class="field-errors">{{ form.philosophy_eval.errors }}</div>
                         {% endif %}
+                        <button type="submit" name="action" value="generate_ai_philosophy" class="button inline-button">AI評価生成</button>
+                    </div>
+                    <div class="evaluation-cell">
+                        <label for="{{ form.philosophy_manager_eval.id_for_label }}">{{ form.philosophy_manager_eval.label }}</label>
+                        {{ form.philosophy_manager_eval }}
+                        {% if form.philosophy_manager_eval.errors %}
+                            <div class="field-errors">{{ form.philosophy_manager_eval.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="evaluation-cell score-cell">
+                        <label for="{{ form.philosophy_score.id_for_label }}">{{ form.philosophy_score.label }}</label>
+                        {{ form.philosophy_score }}
+                        {% if form.philosophy_score.errors %}
+                            <div class="field-errors">{{ form.philosophy_score.errors }}</div>
+                        {% endif %}
                     </div>
                 </section>
 
@@ -67,6 +82,21 @@
                         {{ form.finance_eval }}
                         {% if form.finance_eval.errors %}
                             <div class="field-errors">{{ form.finance_eval.errors }}</div>
+                        {% endif %}
+                        <button type="submit" name="action" value="generate_ai_finance" class="button inline-button">AI評価生成</button>
+                    </div>
+                    <div class="evaluation-cell">
+                        <label for="{{ form.finance_manager_eval.id_for_label }}">{{ form.finance_manager_eval.label }}</label>
+                        {{ form.finance_manager_eval }}
+                        {% if form.finance_manager_eval.errors %}
+                            <div class="field-errors">{{ form.finance_manager_eval.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="evaluation-cell score-cell">
+                        <label for="{{ form.finance_score.id_for_label }}">{{ form.finance_score.label }}</label>
+                        {{ form.finance_score }}
+                        {% if form.finance_score.errors %}
+                            <div class="field-errors">{{ form.finance_score.errors }}</div>
                         {% endif %}
                     </div>
                 </section>
@@ -90,6 +120,21 @@
                         {% if form.safety_eval.errors %}
                             <div class="field-errors">{{ form.safety_eval.errors }}</div>
                         {% endif %}
+                        <button type="submit" name="action" value="generate_ai_safety" class="button inline-button">AI評価生成</button>
+                    </div>
+                    <div class="evaluation-cell">
+                        <label for="{{ form.safety_manager_eval.id_for_label }}">{{ form.safety_manager_eval.label }}</label>
+                        {{ form.safety_manager_eval }}
+                        {% if form.safety_manager_eval.errors %}
+                            <div class="field-errors">{{ form.safety_manager_eval.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="evaluation-cell score-cell">
+                        <label for="{{ form.safety_score.id_for_label }}">{{ form.safety_score.label }}</label>
+                        {{ form.safety_score }}
+                        {% if form.safety_score.errors %}
+                            <div class="field-errors">{{ form.safety_score.errors }}</div>
+                        {% endif %}
                     </div>
                 </section>
 
@@ -112,13 +157,28 @@
                         {% if form.cooperation_eval.errors %}
                             <div class="field-errors">{{ form.cooperation_eval.errors }}</div>
                         {% endif %}
+                        <button type="submit" name="action" value="generate_ai_cooperation" class="button inline-button">AI評価生成</button>
+                    </div>
+                    <div class="evaluation-cell">
+                        <label for="{{ form.cooperation_manager_eval.id_for_label }}">{{ form.cooperation_manager_eval.label }}</label>
+                        {{ form.cooperation_manager_eval }}
+                        {% if form.cooperation_manager_eval.errors %}
+                            <div class="field-errors">{{ form.cooperation_manager_eval.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="evaluation-cell score-cell">
+                        <label for="{{ form.cooperation_score.id_for_label }}">{{ form.cooperation_score.label }}</label>
+                        {{ form.cooperation_score }}
+                        {% if form.cooperation_score.errors %}
+                            <div class="field-errors">{{ form.cooperation_score.errors }}</div>
+                        {% endif %}
                     </div>
                 </section>
             </div>
         {% endif %}
 
         <div class="form-actions">
-            <button type="submit" class="button">保存</button>
+            <button type="submit" name="action" value="save" class="button">保存</button>
         </div>
     </form>
 {% endif %}

@@ -3,12 +3,13 @@ from functools import wraps
 from pathlib import Path
 
 from django.contrib import messages
+from django.conf import settings
 from django.contrib.auth import login
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
-from django.conf import settings
 from django.shortcuts import redirect, render
 
+from .ai_client import generate_evaluation_text
 from .forms import (
     AchievementForm,
     AppSettingForm,
@@ -25,6 +26,59 @@ from .user_sync import update_user_password_in_csv
 def get_app_setting():
     setting, _ = AppSetting.objects.get_or_create(pk=1, defaults={'current_year': datetime.now().year})
     return setting
+
+
+AI_FIELD_CONFIG = {
+    'philosophy': {
+        'ai_field_name': 'philosophy_eval',
+        'manager_field_name': 'philosophy_manager_eval',
+        'score_field_name': 'philosophy_score',
+        'label': '理念',
+        'department_attr': 'philosophy',
+        'personal_attr': 'philosophy_goal',
+        'achievement_attr': 'philosophy_result',
+    },
+    'finance': {
+        'ai_field_name': 'finance_eval',
+        'manager_field_name': 'finance_manager_eval',
+        'score_field_name': 'finance_score',
+        'label': '経営',
+        'department_attr': 'finance',
+        'personal_attr': 'finance_goal',
+        'achievement_attr': 'finance_result',
+    },
+    'safety': {
+        'ai_field_name': 'safety_eval',
+        'manager_field_name': 'safety_manager_eval',
+        'score_field_name': 'safety_score',
+        'label': '安全',
+        'department_attr': 'safety',
+        'personal_attr': 'safety_goal',
+        'achievement_attr': 'safety_result',
+    },
+    'cooperation': {
+        'ai_field_name': 'cooperation_eval',
+        'manager_field_name': 'cooperation_manager_eval',
+        'score_field_name': 'cooperation_score',
+        'label': '連携',
+        'department_attr': 'cooperation',
+        'personal_attr': 'cooperation_goal',
+        'achievement_attr': 'cooperation_result',
+    },
+}
+
+
+def render_prompt(app_setting, *, selected_user, category_key, department_goal, personal_goal, achievement):
+    config = AI_FIELD_CONFIG[category_key]
+    return app_setting.ai_prompt_template.format(
+        year=app_setting.current_year,
+        user_name=selected_user.first_name or selected_user.username,
+        department=selected_user.department,
+        category=config['label'],
+        department_goal=getattr(department_goal, config['department_attr'], '') if department_goal else '',
+        personal_goal=getattr(personal_goal, config['personal_attr'], '') if personal_goal else '',
+        achievement=getattr(achievement, config['achievement_attr'], '') if achievement else '',
+    )
 
 
 def manager_required(view_func):
@@ -186,8 +240,9 @@ def achievement_view(request):
 
 @manager_required
 def evaluate_view(request):
-    current_year = get_app_setting().current_year
-    subordinates = User.objects.filter(department=request.user.department, is_manager=False).order_by('username')
+    app_setting = get_app_setting()
+    current_year = app_setting.current_year
+    evaluation_targets = User.objects.filter(department=request.user.department).order_by('username')
     selected_user = None
     department_goal = None
     personal_goal = None
@@ -196,13 +251,13 @@ def evaluate_view(request):
     if request.method == 'POST':
         user_id = request.POST.get('user')
         if user_id:
-            selected_user = subordinates.filter(pk=user_id).first()
+            selected_user = evaluation_targets.filter(pk=user_id).first()
     else:
         user_id = request.GET.get('user')
         if user_id:
-            selected_user = subordinates.filter(pk=user_id).first()
-        elif subordinates.exists():
-            selected_user = subordinates.first()
+            selected_user = evaluation_targets.filter(pk=user_id).first()
+        elif evaluation_targets.exists():
+            selected_user = evaluation_targets.first()
 
     initial = {}
     if selected_user:
@@ -221,14 +276,49 @@ def evaluate_view(request):
                     'finance_eval': evaluation.finance_eval,
                     'safety_eval': evaluation.safety_eval,
                     'cooperation_eval': evaluation.cooperation_eval,
+                    'philosophy_manager_eval': evaluation.philosophy_manager_eval,
+                    'finance_manager_eval': evaluation.finance_manager_eval,
+                    'safety_manager_eval': evaluation.safety_manager_eval,
+                    'cooperation_manager_eval': evaluation.cooperation_manager_eval,
+                    'philosophy_score': evaluation.philosophy_score,
+                    'finance_score': evaluation.finance_score,
+                    'safety_score': evaluation.safety_score,
+                    'cooperation_score': evaluation.cooperation_score,
                 }
             )
         else:
             initial['user'] = selected_user
 
-    form = EvaluationForm(request.POST or None, initial=initial, user_queryset=subordinates)
+    form_data = request.POST.copy() if request.method == 'POST' else None
+    action = request.POST.get('action') if request.method == 'POST' else ''
 
-    if request.method == 'POST' and form.is_valid():
+    if action.startswith('generate_ai_') and selected_user:
+        category_key = action.removeprefix('generate_ai_')
+        config = AI_FIELD_CONFIG.get(category_key)
+        temp_form = EvaluationForm(form_data, initial=initial, user_queryset=evaluation_targets)
+        if config and temp_form.is_valid():
+            try:
+                prompt = render_prompt(
+                    app_setting,
+                    selected_user=selected_user,
+                    category_key=category_key,
+                    department_goal=department_goal,
+                    personal_goal=personal_goal,
+                    achievement=achievement,
+                )
+                generated_text = generate_evaluation_text(
+                    endpoint=app_setting.ai_endpoint,
+                    model=app_setting.ai_model,
+                    prompt=prompt,
+                )
+                form_data[config['ai_field_name']] = generated_text
+                messages.success(request, f"{config['label']}のAI評価を生成しました。")
+            except Exception as error:
+                messages.error(request, str(error))
+
+    form = EvaluationForm(form_data or request.POST or None, initial=initial, user_queryset=evaluation_targets)
+
+    if request.method == 'POST' and action == 'save' and form.is_valid():
         evaluation_user = form.cleaned_data['user']
         Evaluation.objects.update_or_create(
             user=evaluation_user,
@@ -238,6 +328,14 @@ def evaluate_view(request):
                 'finance_eval': form.cleaned_data['finance_eval'],
                 'safety_eval': form.cleaned_data['safety_eval'],
                 'cooperation_eval': form.cleaned_data['cooperation_eval'],
+                'philosophy_manager_eval': form.cleaned_data['philosophy_manager_eval'],
+                'finance_manager_eval': form.cleaned_data['finance_manager_eval'],
+                'safety_manager_eval': form.cleaned_data['safety_manager_eval'],
+                'cooperation_manager_eval': form.cleaned_data['cooperation_manager_eval'],
+                'philosophy_score': form.cleaned_data['philosophy_score'],
+                'finance_score': form.cleaned_data['finance_score'],
+                'safety_score': form.cleaned_data['safety_score'],
+                'cooperation_score': form.cleaned_data['cooperation_score'],
             },
         )
         messages.success(request, '評価を保存しました。')
@@ -245,13 +343,14 @@ def evaluate_view(request):
 
     context = {
         'title': '評価入力',
-        'description': f'{request.user.department} の部下を対象に評価を入力します。',
+        'description': f'{request.user.department} の対象者に評価を入力します。',
         'form': form,
-        'no_targets': not subordinates.exists(),
+        'no_targets': not evaluation_targets.exists(),
         'current_year': current_year,
         'selected_user': selected_user,
         'department_goal': department_goal,
         'personal_goal': personal_goal,
         'achievement': achievement,
+        'ai_actions': AI_FIELD_CONFIG,
     }
     return render(request, 'evaluation/evaluate.html', context)
