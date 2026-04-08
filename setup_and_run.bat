@@ -4,6 +4,8 @@ setlocal
 cd /d "%~dp0"
 
 set "VENV_PYTHON=.venv\Scripts\python.exe"
+set "WAITRESS_EXE=.venv\Scripts\waitress-serve.exe"
+set "DJANGO_ALLOWED_HOSTS=*"
 
 where python >nul 2>nul
 if errorlevel 1 (
@@ -62,13 +64,19 @@ if errorlevel 1 (
     exit /b 1
 )
 
+if not exist "%WAITRESS_EXE%" (
+    echo Waitress executable was not found.
+    pause
+    exit /b 1
+)
+
 echo.
-echo Starting the app.
+echo Starting the app with Waitress.
 echo Open http://127.0.0.1:8000/ on this PC.
 echo From another PC, open http://THIS_PC_IP:8000/
 echo Press Ctrl+C to stop the server.
 echo.
 
-"%VENV_PYTHON%" manage.py runserver 0.0.0.0:8000
+"%WAITRESS_EXE%" --listen=0.0.0.0:8000 config.wsgi:application
 
 endlocal
