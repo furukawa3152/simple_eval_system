@@ -1,18 +1,31 @@
 {% extends "evaluation/base.html" %}
 
-{% block title %}評価入力{% endblock %}
+{% block title %}{{ title }}{% endblock %}
+{% block container_class %}evaluation-layout{% endblock %}
+{% block card_class %}evaluation-layout{% endblock %}
 
 {% block content %}
-<h1>{{ title }}</h1>
-<p class="meta">{{ description }}</p>
-{% if current_year %}
-    <div class="year-chip">対象年度: {{ current_year }}</div>
-{% endif %}
+<div class="entry-header">
+    <div class="entry-header-main">
+        <h1>{{ title }}</h1>
+        <p class="meta">{{ description }}</p>
+        {% if current_year %}
+            <div class="year-chip">対象年度: {{ current_year }}</div>
+        {% endif %}
+    </div>
+    {% if selected_user %}
+        <aside class="shared-note-panel">
+            <h2 class="shared-note-title">自由記載</h2>
+            <p class="meta">本人が個人目標入力・達成状況入力で記載した共有メモです。</p>
+            <div>{{ personal_goal.shared_note|default:"未入力"|linebreaksbr }}</div>
+        </aside>
+    {% endif %}
+</div>
 
 {% if no_targets %}
     <p>評価対象のユーザーがまだ登録されていません。</p>
 {% else %}
-    <form method="post">
+    <form method="post" data-ai-generate-url="{% url 'evaluate_ai_generate' %}">
         {% csrf_token %}
         <input type="hidden" name="action" id="evaluation-action" value="save">
         <input type="hidden" name="current_target_user" value="{% if selected_user %}{{ selected_user.pk }}{% endif %}">
@@ -32,7 +45,49 @@
         {% if selected_user %}
             <p class="meta">{{ selected_user.first_name }} さん / {{ selected_user.department }}</p>
 
-            <div class="evaluation-table">
+            <div class="form-actions-bar">
+                <div>
+                    {% if selected_user_goal_locked %}
+                        <button type="submit" onclick="document.getElementById('evaluation-action').value='unlock_goal_input';" class="button button-secondary">目標入力ロック解除</button>
+                    {% else %}
+                        <button type="submit" onclick="document.getElementById('evaluation-action').value='lock_goal_input';" class="button">目標入力をロック</button>
+                    {% endif %}
+                    <button type="button" id="bulk-ai-button" class="button bulk-ai-button">AI一括評価</button>
+                </div>
+                <div>
+                    <button type="submit" onclick="document.getElementById('evaluation-action').value='save';" class="button">保存</button>
+                </div>
+            </div>
+
+            <div id="evaluation-loading" class="evaluation-loading" aria-live="polite" role="status">
+                <span class="loading-dots" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+                <span class="evaluation-loading-text">
+                    <span id="evaluation-loading-title">AI一括評価を実行しています。</span>
+                    <span class="evaluation-loading-subtext">1件ずつ順番に処理中です。</span>
+                </span>
+            </div>
+
+            <div id="evaluation-loading-overlay" class="evaluation-loading-overlay" aria-live="polite" role="status" aria-hidden="true">
+                <div class="evaluation-loading-panel">
+                    <div class="evaluation-loading visible">
+                        <span class="loading-dots" aria-hidden="true">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </span>
+                        <span class="evaluation-loading-text">
+                            <span id="evaluation-loading-overlay-title">AI一括評価を実行しています。</span>
+                            <span class="evaluation-loading-subtext">1件ずつ順番に処理中です。</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="evaluation-table evaluation-wide">
                 <section class="evaluation-row">
                     <div class="evaluation-cell reference">
                         <h3>部署目標: 理念</h3>
@@ -47,14 +102,6 @@
                         <div>{{ achievement.philosophy_result|default:"未入力"|linebreaksbr }}</div>
                     </div>
                     <div class="evaluation-cell">
-                        <label for="{{ form.philosophy_eval.id_for_label }}">{{ form.philosophy_eval.label }}</label>
-                        {{ form.philosophy_eval }}
-                        {% if form.philosophy_eval.errors %}
-                            <div class="field-errors">{{ form.philosophy_eval.errors }}</div>
-                        {% endif %}
-                        <button type="submit" onclick="document.getElementById('evaluation-action').value='generate_ai_philosophy';" class="button inline-button">AI評価生成</button>
-                    </div>
-                    <div class="evaluation-cell">
                         <label for="{{ form.philosophy_manager_eval.id_for_label }}">{{ form.philosophy_manager_eval.label }}</label>
                         {{ form.philosophy_manager_eval }}
                         {% if form.philosophy_manager_eval.errors %}
@@ -62,11 +109,21 @@
                         {% endif %}
                     </div>
                     <div class="evaluation-cell score-cell">
-                        <label for="{{ form.philosophy_score.id_for_label }}">{{ form.philosophy_score.label }}</label>
-                        {{ form.philosophy_score }}
-                        {% if form.philosophy_score.errors %}
-                            <div class="field-errors">{{ form.philosophy_score.errors }}</div>
-                        {% endif %}
+                        <div>
+                            <label for="{{ form.philosophy_score.id_for_label }}">{{ form.philosophy_score.label }}</label>
+                            {{ form.philosophy_score }}
+                            {% if form.philosophy_score.errors %}
+                                <div class="field-errors">{{ form.philosophy_score.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="{{ form.philosophy_eval.id_for_label }}">{{ form.philosophy_eval.label }}</label>
+                            {{ form.philosophy_eval }}
+                            {% if form.philosophy_eval.errors %}
+                                <div class="field-errors">{{ form.philosophy_eval.errors }}</div>
+                            {% endif %}
+                            <button type="submit" onclick="document.getElementById('evaluation-action').value='generate_ai_philosophy';" class="button inline-button">AI評価生成</button>
+                        </div>
                     </div>
                 </section>
 
@@ -84,14 +141,6 @@
                         <div>{{ achievement.finance_result|default:"未入力"|linebreaksbr }}</div>
                     </div>
                     <div class="evaluation-cell">
-                        <label for="{{ form.finance_eval.id_for_label }}">{{ form.finance_eval.label }}</label>
-                        {{ form.finance_eval }}
-                        {% if form.finance_eval.errors %}
-                            <div class="field-errors">{{ form.finance_eval.errors }}</div>
-                        {% endif %}
-                        <button type="submit" onclick="document.getElementById('evaluation-action').value='generate_ai_finance';" class="button inline-button">AI評価生成</button>
-                    </div>
-                    <div class="evaluation-cell">
                         <label for="{{ form.finance_manager_eval.id_for_label }}">{{ form.finance_manager_eval.label }}</label>
                         {{ form.finance_manager_eval }}
                         {% if form.finance_manager_eval.errors %}
@@ -99,11 +148,21 @@
                         {% endif %}
                     </div>
                     <div class="evaluation-cell score-cell">
-                        <label for="{{ form.finance_score.id_for_label }}">{{ form.finance_score.label }}</label>
-                        {{ form.finance_score }}
-                        {% if form.finance_score.errors %}
-                            <div class="field-errors">{{ form.finance_score.errors }}</div>
-                        {% endif %}
+                        <div>
+                            <label for="{{ form.finance_score.id_for_label }}">{{ form.finance_score.label }}</label>
+                            {{ form.finance_score }}
+                            {% if form.finance_score.errors %}
+                                <div class="field-errors">{{ form.finance_score.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="{{ form.finance_eval.id_for_label }}">{{ form.finance_eval.label }}</label>
+                            {{ form.finance_eval }}
+                            {% if form.finance_eval.errors %}
+                                <div class="field-errors">{{ form.finance_eval.errors }}</div>
+                            {% endif %}
+                            <button type="submit" onclick="document.getElementById('evaluation-action').value='generate_ai_finance';" class="button inline-button">AI評価生成</button>
+                        </div>
                     </div>
                 </section>
 
@@ -121,14 +180,6 @@
                         <div>{{ achievement.safety_result|default:"未入力"|linebreaksbr }}</div>
                     </div>
                     <div class="evaluation-cell">
-                        <label for="{{ form.safety_eval.id_for_label }}">{{ form.safety_eval.label }}</label>
-                        {{ form.safety_eval }}
-                        {% if form.safety_eval.errors %}
-                            <div class="field-errors">{{ form.safety_eval.errors }}</div>
-                        {% endif %}
-                        <button type="submit" onclick="document.getElementById('evaluation-action').value='generate_ai_safety';" class="button inline-button">AI評価生成</button>
-                    </div>
-                    <div class="evaluation-cell">
                         <label for="{{ form.safety_manager_eval.id_for_label }}">{{ form.safety_manager_eval.label }}</label>
                         {{ form.safety_manager_eval }}
                         {% if form.safety_manager_eval.errors %}
@@ -136,11 +187,21 @@
                         {% endif %}
                     </div>
                     <div class="evaluation-cell score-cell">
-                        <label for="{{ form.safety_score.id_for_label }}">{{ form.safety_score.label }}</label>
-                        {{ form.safety_score }}
-                        {% if form.safety_score.errors %}
-                            <div class="field-errors">{{ form.safety_score.errors }}</div>
-                        {% endif %}
+                        <div>
+                            <label for="{{ form.safety_score.id_for_label }}">{{ form.safety_score.label }}</label>
+                            {{ form.safety_score }}
+                            {% if form.safety_score.errors %}
+                                <div class="field-errors">{{ form.safety_score.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="{{ form.safety_eval.id_for_label }}">{{ form.safety_eval.label }}</label>
+                            {{ form.safety_eval }}
+                            {% if form.safety_eval.errors %}
+                                <div class="field-errors">{{ form.safety_eval.errors }}</div>
+                            {% endif %}
+                            <button type="submit" onclick="document.getElementById('evaluation-action').value='generate_ai_safety';" class="button inline-button">AI評価生成</button>
+                        </div>
                     </div>
                 </section>
 
@@ -158,14 +219,6 @@
                         <div>{{ achievement.cooperation_result|default:"未入力"|linebreaksbr }}</div>
                     </div>
                     <div class="evaluation-cell">
-                        <label for="{{ form.cooperation_eval.id_for_label }}">{{ form.cooperation_eval.label }}</label>
-                        {{ form.cooperation_eval }}
-                        {% if form.cooperation_eval.errors %}
-                            <div class="field-errors">{{ form.cooperation_eval.errors }}</div>
-                        {% endif %}
-                        <button type="submit" onclick="document.getElementById('evaluation-action').value='generate_ai_cooperation';" class="button inline-button">AI評価生成</button>
-                    </div>
-                    <div class="evaluation-cell">
                         <label for="{{ form.cooperation_manager_eval.id_for_label }}">{{ form.cooperation_manager_eval.label }}</label>
                         {{ form.cooperation_manager_eval }}
                         {% if form.cooperation_manager_eval.errors %}
@@ -173,19 +226,133 @@
                         {% endif %}
                     </div>
                     <div class="evaluation-cell score-cell">
-                        <label for="{{ form.cooperation_score.id_for_label }}">{{ form.cooperation_score.label }}</label>
-                        {{ form.cooperation_score }}
-                        {% if form.cooperation_score.errors %}
-                            <div class="field-errors">{{ form.cooperation_score.errors }}</div>
-                        {% endif %}
+                        <div>
+                            <label for="{{ form.cooperation_score.id_for_label }}">{{ form.cooperation_score.label }}</label>
+                            {{ form.cooperation_score }}
+                            {% if form.cooperation_score.errors %}
+                                <div class="field-errors">{{ form.cooperation_score.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="{{ form.cooperation_eval.id_for_label }}">{{ form.cooperation_eval.label }}</label>
+                            {{ form.cooperation_eval }}
+                            {% if form.cooperation_eval.errors %}
+                                <div class="field-errors">{{ form.cooperation_eval.errors }}</div>
+                            {% endif %}
+                            <button type="submit" onclick="document.getElementById('evaluation-action').value='generate_ai_cooperation';" class="button inline-button">AI評価生成</button>
+                        </div>
                     </div>
                 </section>
             </div>
         {% endif %}
-
-        <div class="form-actions">
-            <button type="submit" onclick="document.getElementById('evaluation-action').value='save';" class="button">保存</button>
-        </div>
     </form>
 {% endif %}
+
+<script>
+    (() => {
+        const form = document.querySelector("form[data-ai-generate-url]");
+        const actionField = document.getElementById("evaluation-action");
+        const bulkButton = document.getElementById("bulk-ai-button");
+        const loading = document.getElementById("evaluation-loading");
+        const overlay = document.getElementById("evaluation-loading-overlay");
+        const loadingTitle = document.getElementById("evaluation-loading-title");
+        const overlayTitle = document.getElementById("evaluation-loading-overlay-title");
+
+        if (!form || !actionField || !bulkButton || !loading || !overlay || !loadingTitle || !overlayTitle) {
+            return;
+        }
+
+        const userField = document.getElementById("{{ form.user.id_for_label }}");
+        const csrfToken = form.querySelector("input[name='csrfmiddlewaretoken']");
+        const aiGenerateUrl = form.dataset.aiGenerateUrl;
+        const categories = ["philosophy", "finance", "safety", "cooperation"];
+
+        const showBulkLoading = (message) => {
+            const text = message || "AI一括評価を実行しています。";
+            bulkButton.disabled = true;
+            bulkButton.textContent = "AI一括評価を実行中...";
+            loadingTitle.textContent = text;
+            overlayTitle.textContent = text;
+            loading.classList.add("visible");
+            overlay.classList.add("visible");
+            overlay.setAttribute("aria-hidden", "false");
+            document.body.style.overflow = "hidden";
+        };
+
+        const hideBulkLoading = () => {
+            bulkButton.disabled = false;
+            bulkButton.textContent = "AI一括評価";
+            loading.classList.remove("visible");
+            overlay.classList.remove("visible");
+            overlay.setAttribute("aria-hidden", "true");
+            document.body.style.overflow = "";
+        };
+
+        const setAiFieldValue = (category, text) => {
+            const field = form.querySelector(`[data-ai-field="${category}"]`);
+            if (field) {
+                field.value = text;
+            }
+        };
+
+        bulkButton.addEventListener("click", async (event) => {
+            event.preventDefault();
+
+            if (!userField || !userField.value || !csrfToken || !aiGenerateUrl) {
+                return;
+            }
+
+            try {
+                showBulkLoading("AI一括評価を開始しています。");
+
+                for (let index = 0; index < categories.length; index += 1) {
+                    const category = categories[index];
+                    showBulkLoading(`AI一括評価を実行しています。(${index + 1}/4)`);
+
+                    const body = new URLSearchParams();
+                    body.set("csrfmiddlewaretoken", csrfToken.value);
+                    body.set("user", userField.value);
+                    body.set("category", category);
+
+                    const response = await fetch(aiGenerateUrl, {
+                        method: "POST",
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest",
+                            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        },
+                        body: body.toString(),
+                        credentials: "same-origin",
+                    });
+
+                    let data;
+                    try {
+                        data = await response.json();
+                    } catch (jsonError) {
+                        throw new Error("AI評価の応答を読み取れませんでした。");
+                    }
+
+                    if (!response.ok || !data.ok) {
+                        throw new Error(data.message || "AI評価の一括生成に失敗しました。");
+                    }
+
+                    setAiFieldValue(category, data.text || "");
+                }
+
+                showBulkLoading("AI一括評価が完了しました。保存しています。");
+                window.setTimeout(() => {
+                    hideBulkLoading();
+                    actionField.value = "save";
+                    if (typeof form.requestSubmit === "function") {
+                        form.requestSubmit();
+                    } else {
+                        form.submit();
+                    }
+                }, 300);
+            } catch (error) {
+                hideBulkLoading();
+                window.alert(error.message || "AI評価の一括生成に失敗しました。");
+            }
+        });
+    })();
+</script>
 {% endblock %}

@@ -14,4 +14,5 @@ urlpatterns = [
     path('my_goal/', views.my_goal_view, name='my_goal'),
     path('achievement/', views.achievement_view, name='achievement'),
     path('evaluate/', views.evaluate_view, name='evaluate'),
+    path('evaluate/ai-generate/', views.evaluate_ai_generate_view, name='evaluate_ai_generate'),
 ]

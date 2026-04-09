@@ -3,78 +3,205 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<h1>{{ title }}</h1>
-<p class="meta">{{ description }}</p>
-{% if current_year %}
-    <div class="year-chip">対象年度: {{ current_year }}</div>
-{% endif %}
-
 <form method="post">
     {% csrf_token %}
 
-    {% if show_goal_pairs %}
-        <div class="goal-grid">
-            <section class="goal-pair">
-                <div class="goal-reference">
-                    <h3>部署目標: 理念</h3>
-                    <div>{{ department_goal.philosophy|default:"未入力"|linebreaksbr }}</div>
-                </div>
-                <div class="goal-input">
-                    <label for="{{ form.philosophy_goal.id_for_label }}">{{ form.philosophy_goal.label }}</label>
-                    {{ form.philosophy_goal }}
-                    {% if form.philosophy_goal.errors %}
-                        <div class="field-errors">{{ form.philosophy_goal.errors }}</div>
-                    {% endif %}
-                </div>
-            </section>
+<div class="entry-header">
+    <div class="entry-header-main">
+        <h1>{{ title }}</h1>
+        <p class="meta">{{ description }}</p>
+        {% if current_year %}
+            <div class="year-chip">対象年度: {{ current_year }}</div>
+        {% endif %}
+        {% if is_goal_locked %}
+            <div class="year-chip">個人目標入力はロックされています</div>
+        {% endif %}
+    </div>
+    {% if shared_note_field %}
+        <aside class="shared-note-panel">
+            <h2 class="shared-note-title">自由記載</h2>
+            <p class="meta">本人のみ編集できます。個人目標入力と達成状況入力で内容を共有します。</p>
+            {{ shared_note_field }}
+            <div class="shared-note-meta">最大400文字</div>
+            {% if shared_note_field.errors %}
+                <div class="field-errors">{{ shared_note_field.errors }}</div>
+            {% endif %}
+        </aside>
+    {% endif %}
+</div>
 
-            <section class="goal-pair">
-                <div class="goal-reference">
-                    <h3>部署目標: 経営</h3>
-                    <div>{{ department_goal.finance|default:"未入力"|linebreaksbr }}</div>
-                </div>
-                <div class="goal-input">
-                    <label for="{{ form.finance_goal.id_for_label }}">{{ form.finance_goal.label }}</label>
-                    {{ form.finance_goal }}
-                    {% if form.finance_goal.errors %}
-                        <div class="field-errors">{{ form.finance_goal.errors }}</div>
-                    {% endif %}
-                </div>
-            </section>
-
-            <section class="goal-pair">
-                <div class="goal-reference">
-                    <h3>部署目標: 安全</h3>
-                    <div>{{ department_goal.safety|default:"未入力"|linebreaksbr }}</div>
-                </div>
-                <div class="goal-input">
-                    <label for="{{ form.safety_goal.id_for_label }}">{{ form.safety_goal.label }}</label>
-                    {{ form.safety_goal }}
-                    {% if form.safety_goal.errors %}
-                        <div class="field-errors">{{ form.safety_goal.errors }}</div>
-                    {% endif %}
-                </div>
-            </section>
-
-            <section class="goal-pair">
-                <div class="goal-reference">
-                    <h3>部署目標: 連携</h3>
-                    <div>{{ department_goal.cooperation|default:"未入力"|linebreaksbr }}</div>
-                </div>
-                <div class="goal-input">
-                    <label for="{{ form.cooperation_goal.id_for_label }}">{{ form.cooperation_goal.label }}</label>
-                    {{ form.cooperation_goal }}
-                    {% if form.cooperation_goal.errors %}
-                        <div class="field-errors">{{ form.cooperation_goal.errors }}</div>
-                    {% endif %}
-                </div>
-            </section>
-        </div>
-
-        <div class="form-actions">
+    {% if show_department_goal_pairs %}
+        <div class="form-actions-top">
             <button type="submit" class="button">保存</button>
         </div>
+        <div class="goal-grid">
+            <section class="goal-pair">
+                <div class="goal-column">
+                    <h3 class="goal-heading">部署目標: 理念</h3>
+                    <div class="goal-reference">
+                        <div>部署として重視する理念面の目標を入力してください。</div>
+                    </div>
+                </div>
+                <div class="goal-column">
+                    <h3 class="goal-heading">部署目標: 理念</h3>
+                    <div class="goal-input">
+                        <label for="{{ form.philosophy.id_for_label }}">部署目標: 理念</label>
+                        {{ form.philosophy }}
+                        {% if form.philosophy.errors %}
+                            <div class="field-errors">{{ form.philosophy.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="goal-pair">
+                <div class="goal-column">
+                    <h3 class="goal-heading">部署目標: 経営</h3>
+                    <div class="goal-reference">
+                        <div>部署として重視する経営面の目標を入力してください。</div>
+                    </div>
+                </div>
+                <div class="goal-column">
+                    <h3 class="goal-heading">部署目標: 経営</h3>
+                    <div class="goal-input">
+                        <label for="{{ form.finance.id_for_label }}">部署目標: 経営</label>
+                        {{ form.finance }}
+                        {% if form.finance.errors %}
+                            <div class="field-errors">{{ form.finance.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="goal-pair">
+                <div class="goal-column">
+                    <h3 class="goal-heading">部署目標: 安全</h3>
+                    <div class="goal-reference">
+                        <div>部署として重視する安全面の目標を入力してください。</div>
+                    </div>
+                </div>
+                <div class="goal-column">
+                    <h3 class="goal-heading">部署目標: 安全</h3>
+                    <div class="goal-input">
+                        <label for="{{ form.safety.id_for_label }}">部署目標: 安全</label>
+                        {{ form.safety }}
+                        {% if form.safety.errors %}
+                            <div class="field-errors">{{ form.safety.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="goal-pair">
+                <div class="goal-column">
+                    <h3 class="goal-heading">部署目標: 連携</h3>
+                    <div class="goal-reference">
+                        <div>部署として重視する連携面の目標を入力してください。</div>
+                    </div>
+                </div>
+                <div class="goal-column">
+                    <h3 class="goal-heading">部署目標: 連携</h3>
+                    <div class="goal-input">
+                        <label for="{{ form.cooperation.id_for_label }}">部署目標: 連携</label>
+                        {{ form.cooperation }}
+                        {% if form.cooperation.errors %}
+                            <div class="field-errors">{{ form.cooperation.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    {% elif show_goal_pairs %}
+        <div class="form-actions-top">
+            {% if is_goal_locked %}
+                <button type="button" class="button button-secondary" disabled>ロック中</button>
+            {% else %}
+                <button type="submit" class="button">保存</button>
+            {% endif %}
+        </div>
+        <div class="goal-grid">
+            <section class="goal-pair">
+                <div class="goal-column">
+                    <h3 class="goal-heading">部署目標: 理念</h3>
+                    <div class="goal-reference">
+                        <div>{{ department_goal.philosophy|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                </div>
+                <div class="goal-column">
+                    <h3 class="goal-heading">個人目標: 理念</h3>
+                    <div class="goal-input">
+                        <label for="{{ form.philosophy_goal.id_for_label }}">個人目標: 理念</label>
+                        {{ form.philosophy_goal }}
+                        {% if form.philosophy_goal.errors %}
+                            <div class="field-errors">{{ form.philosophy_goal.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="goal-pair">
+                <div class="goal-column">
+                    <h3 class="goal-heading">部署目標: 経営</h3>
+                    <div class="goal-reference">
+                        <div>{{ department_goal.finance|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                </div>
+                <div class="goal-column">
+                    <h3 class="goal-heading">個人目標: 経営</h3>
+                    <div class="goal-input">
+                        <label for="{{ form.finance_goal.id_for_label }}">個人目標: 経営</label>
+                        {{ form.finance_goal }}
+                        {% if form.finance_goal.errors %}
+                            <div class="field-errors">{{ form.finance_goal.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="goal-pair">
+                <div class="goal-column">
+                    <h3 class="goal-heading">部署目標: 安全</h3>
+                    <div class="goal-reference">
+                        <div>{{ department_goal.safety|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                </div>
+                <div class="goal-column">
+                    <h3 class="goal-heading">個人目標: 安全</h3>
+                    <div class="goal-input">
+                        <label for="{{ form.safety_goal.id_for_label }}">個人目標: 安全</label>
+                        {{ form.safety_goal }}
+                        {% if form.safety_goal.errors %}
+                            <div class="field-errors">{{ form.safety_goal.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="goal-pair">
+                <div class="goal-column">
+                    <h3 class="goal-heading">部署目標: 連携</h3>
+                    <div class="goal-reference">
+                        <div>{{ department_goal.cooperation|default:"未入力"|linebreaksbr }}</div>
+                    </div>
+                </div>
+                <div class="goal-column">
+                    <h3 class="goal-heading">個人目標: 連携</h3>
+                    <div class="goal-input">
+                        <label for="{{ form.cooperation_goal.id_for_label }}">個人目標: 連携</label>
+                        {{ form.cooperation_goal }}
+                        {% if form.cooperation_goal.errors %}
+                            <div class="field-errors">{{ form.cooperation_goal.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+        </div>
+
     {% elif show_achievement_pairs %}
+        <div class="form-actions-top">
+            <button type="submit" class="button">保存</button>
+        </div>
         <div class="achievement-table">
             <section class="achievement-row">
                 <div class="achievement-cell reference">
@@ -149,12 +276,9 @@
             </section>
         </div>
 
-        <div class="form-actions">
-            <button type="submit" class="button">保存</button>
-        </div>
     {% else %}
         {{ form.as_p }}
         <button type="submit" class="button">保存</button>
     {% endif %}
-</form>
+    </form>
 {% endblock %}
