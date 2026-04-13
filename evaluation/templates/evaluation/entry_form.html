@@ -6,29 +6,27 @@
 <form method="post">
     {% csrf_token %}
 
-<div class="entry-header">
-    <div class="entry-header-main">
-        <h1>{{ title }}</h1>
-        <p class="meta">{{ description }}</p>
-        {% if current_year %}
-            <div class="year-chip">対象年度: {{ current_year }}</div>
-        {% endif %}
-        {% if is_goal_locked %}
-            <div class="year-chip">個人目標入力はロックされています</div>
+    <div class="entry-header">
+        <div class="entry-header-main">
+            <h1>{{ title }}</h1>
+            <p class="meta">{{ description }}</p>
+            {% if current_year %}
+                <div class="year-chip">対象年度: {{ current_year }}</div>
+            {% endif %}
+            {% if is_goal_locked %}
+                <div class="year-chip">個人目標入力はロックされています</div>
+            {% endif %}
+        </div>
+        {% if shared_note_field %}
+            <aside class="shared-note-panel">
+                <h2 class="shared-note-title">自由記載</h2>
+                {{ shared_note_field }}
+                {% if shared_note_field.errors %}
+                    <div class="field-errors">{{ shared_note_field.errors }}</div>
+                {% endif %}
+            </aside>
         {% endif %}
     </div>
-    {% if shared_note_field %}
-        <aside class="shared-note-panel">
-            <h2 class="shared-note-title">自由記載</h2>
-            <p class="meta">本人のみ編集できます。個人目標入力と達成状況入力で内容を共有します。</p>
-            {{ shared_note_field }}
-            <div class="shared-note-meta">最大400文字</div>
-            {% if shared_note_field.errors %}
-                <div class="field-errors">{{ shared_note_field.errors }}</div>
-            {% endif %}
-        </aside>
-    {% endif %}
-</div>
 
     {% if show_department_goal_pairs %}
         <div class="form-actions-top">
@@ -280,5 +278,5 @@
         {{ form.as_p }}
         <button type="submit" class="button">保存</button>
     {% endif %}
-    </form>
+</form>
 {% endblock %}

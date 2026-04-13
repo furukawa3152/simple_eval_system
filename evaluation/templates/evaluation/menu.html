@@ -11,7 +11,7 @@
     {% if user.is_manager %}
         <div class="menu-item">
             <h2>設定</h2>
-            <p>現在年度やAI関連の設定を変更します。</p>
+            <p>現在年度や AI 関連の設定を変更します。</p>
             <a href="{% url 'year_setting' %}">開く</a>
         </div>
         <div class="menu-item">
@@ -21,13 +21,18 @@
         </div>
         <div class="menu-item">
             <h2>評価入力</h2>
-            <p>同じ部署の対象者に対する評価を入力します。</p>
+            <p>自部署の対象者に対する評価を入力します。</p>
             <a href="{% url 'evaluate' %}">開く</a>
+        </div>
+        <div class="menu-item">
+            <h2>CSV出力</h2>
+            <p>自部署の情報を現在年度分でまとめて、1ユーザー1行のCSVとして出力します。</p>
+            <a href="{% url 'export_department_csv' %}">ダウンロード</a>
         </div>
     {% endif %}
     <div class="menu-item">
         <h2>個人目標入力</h2>
-        <p>自身の目標を4項目で入力します。</p>
+        <p>自分の目標を4項目で入力します。</p>
         <a href="{% url 'my_goal' %}">開く</a>
     </div>
     <div class="menu-item">

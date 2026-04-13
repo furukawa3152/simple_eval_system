@@ -5,23 +5,6 @@
 {% block card_class %}evaluation-layout{% endblock %}
 
 {% block content %}
-<div class="entry-header">
-    <div class="entry-header-main">
-        <h1>{{ title }}</h1>
-        <p class="meta">{{ description }}</p>
-        {% if current_year %}
-            <div class="year-chip">対象年度: {{ current_year }}</div>
-        {% endif %}
-    </div>
-    {% if selected_user %}
-        <aside class="shared-note-panel">
-            <h2 class="shared-note-title">自由記載</h2>
-            <p class="meta">本人が個人目標入力・達成状況入力で記載した共有メモです。</p>
-            <div>{{ personal_goal.shared_note|default:"未入力"|linebreaksbr }}</div>
-        </aside>
-    {% endif %}
-</div>
-
 {% if no_targets %}
     <p>評価対象のユーザーがまだ登録されていません。</p>
 {% else %}
@@ -29,6 +12,31 @@
         {% csrf_token %}
         <input type="hidden" name="action" id="evaluation-action" value="save">
         <input type="hidden" name="current_target_user" value="{% if selected_user %}{{ selected_user.pk }}{% endif %}">
+
+        <div class="entry-header">
+            <div class="entry-header-main">
+                <h1>{{ title }}</h1>
+                <p class="meta">{{ description }}</p>
+                {% if current_year %}
+                    <div class="year-chip">対象年度: {{ current_year }}</div>
+                {% endif %}
+            </div>
+            {% if selected_user %}
+                <div class="shared-note-grid">
+                    <aside class="shared-note-panel">
+                        <h2 class="shared-note-title">評価自由記載</h2>
+                        {{ form.manager_note }}
+                        {% if form.manager_note.errors %}
+                            <div class="field-errors">{{ form.manager_note.errors }}</div>
+                        {% endif %}
+                    </aside>
+                    <aside class="shared-note-panel">
+                        <h2 class="shared-note-title">自由記載</h2>
+                        <div class="shared-note-value">{{ personal_goal.shared_note|default:"未入力" }}</div>
+                    </aside>
+                </div>
+            {% endif %}
+        </div>
 
         <p>
             {{ form.user.label_tag }}

@@ -104,6 +104,7 @@ class Achievement(models.Model):
 class Evaluation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="evaluations")
     year = models.IntegerField(verbose_name="年度")
+    manager_note = models.CharField(max_length=400, blank=True, verbose_name="評価自由記載")
     philosophy_eval = models.TextField(blank=True, verbose_name="理念AI評価")
     finance_eval = models.TextField(blank=True, verbose_name="経営AI評価")
     safety_eval = models.TextField(blank=True, verbose_name="安全AI評価")

@@ -127,6 +127,18 @@ class AchievementForm(forms.ModelForm):
 
 class EvaluationForm(forms.Form):
     user = forms.ModelChoiceField(queryset=User.objects.none(), label="評価対象")
+    manager_note = forms.CharField(
+        label="評価自由記載",
+        required=False,
+        max_length=400,
+        widget=forms.Textarea(
+            attrs={
+                "rows": 5,
+                "maxlength": 400,
+                "placeholder": "評価時の補足メモを入力してください。",
+            }
+        ),
+    )
     philosophy_eval = forms.CharField(
         label="理念AI評価",
         required=False,

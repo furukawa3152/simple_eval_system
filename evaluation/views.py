@@ -1,13 +1,14 @@
+import csv
 from datetime import datetime
 from functools import wraps
-from pathlib import Path
+from io import StringIO
 import time
+from urllib.parse import quote
 
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 
 from .ai_client import generate_evaluation_text
@@ -22,7 +23,6 @@ from .forms import (
     SettingAccessForm,
 )
 from .models import Achievement, AppSetting, DepartmentGoal, Evaluation, PersonalGoal, User
-from .user_sync import update_user_password_in_csv
 
 
 SETTINGS_GATE_PASSWORD = "fuck"
@@ -91,6 +91,7 @@ def save_evaluation_form(form, target_user, current_year):
         user=target_user,
         year=current_year,
         defaults={
+            "manager_note": form.cleaned_data["manager_note"],
             "philosophy_eval": form.cleaned_data["philosophy_eval"],
             "finance_eval": form.cleaned_data["finance_eval"],
             "safety_eval": form.cleaned_data["safety_eval"],
@@ -185,8 +186,6 @@ def initial_password_change_view(request):
     form = InitialPasswordChangeForm(request.user, request.POST or None)
     if request.method == "POST" and form.is_valid():
         new_password = form.cleaned_data["new_password1"]
-        csv_path = Path(settings.BASE_DIR) / "users.csv"
-        update_user_password_in_csv(csv_path, request.user.username, new_password, require_password_change=False)
         request.user.set_password(new_password)
         request.user.require_password_change = False
         request.user.save(update_fields=["password", "require_password_change"])
@@ -208,6 +207,120 @@ def initial_password_change_view(request):
 @login_required
 def menu_view(request):
     return render(request, "evaluation/menu.html", {"current_year": get_app_setting().current_year})
+
+
+@manager_required
+def export_department_csv_view(request):
+    current_year = get_app_setting().current_year
+    users = list(
+        User.objects.filter(department=request.user.department).order_by("username")
+    )
+
+    department_goal = DepartmentGoal.objects.filter(
+        department=request.user.department,
+        year=current_year,
+    ).first()
+    personal_goals = {
+        item.user_id: item
+        for item in PersonalGoal.objects.filter(user__in=users, year=current_year)
+    }
+    achievements = {
+        item.user_id: item
+        for item in Achievement.objects.filter(user__in=users, year=current_year)
+    }
+    evaluations = {
+        item.user_id: item
+        for item in Evaluation.objects.filter(user__in=users, year=current_year)
+    }
+
+    output = StringIO()
+    writer = csv.writer(output, lineterminator="\n")
+    writer.writerow(
+        [
+            "年度",
+            "部署",
+            "社員ID",
+            "氏名",
+            "権限",
+            "部署目標_理念",
+            "部署目標_経営",
+            "部署目標_安全",
+            "部署目標_連携",
+            "自由記載",
+            "個人目標_理念",
+            "個人目標_経営",
+            "個人目標_安全",
+            "個人目標_連携",
+            "達成状況_理念",
+            "達成状況_経営",
+            "達成状況_安全",
+            "達成状況_連携",
+            "評価自由記載",
+            "上長評価_理念",
+            "上長評価_経営",
+            "上長評価_安全",
+            "上長評価_連携",
+            "AI評価_理念",
+            "AI評価_経営",
+            "AI評価_安全",
+            "AI評価_連携",
+            "点数_理念",
+            "点数_経営",
+            "点数_安全",
+            "点数_連携",
+        ]
+    )
+
+    for user in users:
+        personal_goal = personal_goals.get(user.id)
+        achievement = achievements.get(user.id)
+        evaluation = evaluations.get(user.id)
+        full_name = f"{user.last_name}{user.first_name}".strip() or user.username
+
+        writer.writerow(
+            [
+                current_year,
+                user.department,
+                user.username,
+                full_name,
+                "上長" if user.is_manager else "部下",
+                department_goal.philosophy if department_goal else "",
+                department_goal.finance if department_goal else "",
+                department_goal.safety if department_goal else "",
+                department_goal.cooperation if department_goal else "",
+                personal_goal.shared_note if personal_goal else "",
+                personal_goal.philosophy_goal if personal_goal else "",
+                personal_goal.finance_goal if personal_goal else "",
+                personal_goal.safety_goal if personal_goal else "",
+                personal_goal.cooperation_goal if personal_goal else "",
+                achievement.philosophy_result if achievement else "",
+                achievement.finance_result if achievement else "",
+                achievement.safety_result if achievement else "",
+                achievement.cooperation_result if achievement else "",
+                evaluation.manager_note if evaluation else "",
+                evaluation.philosophy_manager_eval if evaluation else "",
+                evaluation.finance_manager_eval if evaluation else "",
+                evaluation.safety_manager_eval if evaluation else "",
+                evaluation.cooperation_manager_eval if evaluation else "",
+                evaluation.philosophy_eval if evaluation else "",
+                evaluation.finance_eval if evaluation else "",
+                evaluation.safety_eval if evaluation else "",
+                evaluation.cooperation_eval if evaluation else "",
+                evaluation.philosophy_score if evaluation and evaluation.philosophy_score is not None else "",
+                evaluation.finance_score if evaluation and evaluation.finance_score is not None else "",
+                evaluation.safety_score if evaluation and evaluation.safety_score is not None else "",
+                evaluation.cooperation_score if evaluation and evaluation.cooperation_score is not None else "",
+            ]
+        )
+
+    filename = f"{request.user.department}_{current_year}_export.csv"
+    csv_bytes = output.getvalue().encode("shift_jis", errors="replace")
+    response = HttpResponse(csv_bytes, content_type="text/csv; charset=shift_jis")
+    response["Content-Disposition"] = (
+        f'attachment; filename="department_export_{current_year}.csv"; '
+        f"filename*=UTF-8''{quote(filename)}"
+    )
+    return response
 
 
 @manager_required
@@ -398,6 +511,7 @@ def evaluate_view(request):
             initial.update(
                 {
                     "user": selected_user,
+                    "manager_note": evaluation.manager_note,
                     "philosophy_eval": evaluation.philosophy_eval,
                     "finance_eval": evaluation.finance_eval,
                     "safety_eval": evaluation.safety_eval,

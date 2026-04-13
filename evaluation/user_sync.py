@@ -4,8 +4,13 @@ from pathlib import Path
 from django.contrib.auth import get_user_model
 
 
-ENCODINGS = ('utf-8-sig', 'cp932')
-PASSWORD_CHANGE_FIELD = '要パスワード変更'
+ENCODINGS = ("utf-8-sig", "cp932")
+PASSWORD_CHANGE_FIELD = "要パスワード変更"
+PASSWORD_FIELD = "パスワード"
+USERNAME_FIELD = "id"
+NAME_FIELD = "名前"
+DEPARTMENT_FIELD = "部署"
+MANAGER_FIELD = "上長フラグ"
 
 
 def load_user_rows(csv_path):
@@ -14,7 +19,7 @@ def load_user_rows(csv_path):
 
     for encoding in ENCODINGS:
         try:
-            with csv_path.open(encoding=encoding, newline='') as file:
+            with csv_path.open(encoding=encoding, newline="") as file:
                 reader = csv.DictReader(file)
                 rows = list(reader)
                 fieldnames = list(reader.fieldnames or [])
@@ -29,9 +34,9 @@ def load_user_rows(csv_path):
 
 def should_require_password_change(row):
     value = row.get(PASSWORD_CHANGE_FIELD)
-    if value is None or value == '':
+    if value is None or value == "":
         return True
-    return str(value).strip() in {'1', 'true', 'True', 'yes', 'YES'}
+    return str(value).strip() in {"1", "true", "True", "yes", "YES"}
 
 
 def write_user_rows(csv_path, rows, fieldnames, encoding):
@@ -41,42 +46,25 @@ def write_user_rows(csv_path, rows, fieldnames, encoding):
         normalized_fieldnames.append(PASSWORD_CHANGE_FIELD)
 
     for row in rows:
-        if PASSWORD_CHANGE_FIELD not in row or row[PASSWORD_CHANGE_FIELD] == '':
-            row[PASSWORD_CHANGE_FIELD] = '1'
+        if PASSWORD_CHANGE_FIELD not in row or row[PASSWORD_CHANGE_FIELD] == "":
+            row[PASSWORD_CHANGE_FIELD] = "1"
 
-    with csv_path.open('w', encoding=encoding or 'utf-8-sig', newline='') as file:
+    with csv_path.open("w", encoding=encoding or "utf-8-sig", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=normalized_fieldnames)
         writer.writeheader()
         writer.writerows(rows)
-
-
-def update_user_password_in_csv(csv_path, username, new_password, require_password_change=False):
-    rows, encoding, fieldnames = load_user_rows(csv_path)
-    updated = False
-
-    for row in rows:
-        if row.get('id') == username:
-            row['パスワード'] = new_password
-            row[PASSWORD_CHANGE_FIELD] = '1' if require_password_change else '0'
-            updated = True
-            break
-
-    if not updated:
-        raise ValueError(f'CSV内に対象ユーザーが見つかりません: {username}')
-
-    write_user_rows(csv_path, rows, fieldnames, encoding)
 
 
 def sync_users_from_csv(csv_path):
     csv_path = Path(csv_path)
     if not csv_path.exists():
         return {
-            'created': 0,
-            'updated': 0,
-            'deleted': 0,
-            'encoding': None,
-            'path': str(csv_path),
-            'missing': True,
+            "created": 0,
+            "updated": 0,
+            "deleted": 0,
+            "encoding": None,
+            "path": str(csv_path),
+            "missing": True,
         }
 
     rows, encoding, fieldnames = load_user_rows(csv_path)
@@ -87,18 +75,18 @@ def sync_users_from_csv(csv_path):
     csv_changed = PASSWORD_CHANGE_FIELD not in fieldnames
 
     for row in rows:
-        username = row['id']
+        username = row[USERNAME_FIELD]
         csv_usernames.append(username)
         user, created = user_model.objects.get_or_create(username=username)
         changed = created
-        is_manager = bool(int(row['上長フラグ']))
+        is_manager = bool(int(row[MANAGER_FIELD]))
         require_password_change = should_require_password_change(row)
 
-        if user.first_name != row['名前']:
-            user.first_name = row['名前']
+        if user.first_name != row[NAME_FIELD]:
+            user.first_name = row[NAME_FIELD]
             changed = True
-        if user.department != row['部署']:
-            user.department = row['部署']
+        if user.department != row[DEPARTMENT_FIELD]:
+            user.department = row[DEPARTMENT_FIELD]
             changed = True
         if user.is_manager != is_manager:
             user.is_manager = is_manager
@@ -106,14 +94,14 @@ def sync_users_from_csv(csv_path):
         if user.is_staff != is_manager:
             user.is_staff = is_manager
             changed = True
-        if user.require_password_change != require_password_change:
-            user.require_password_change = require_password_change
-            changed = True
         if not user.is_active:
             user.is_active = True
             changed = True
-        if not user.check_password(row['パスワード']):
-            user.set_password(row['パスワード'])
+
+        # Existing users keep their current password and password-change state in the DB.
+        if created:
+            user.require_password_change = require_password_change
+            user.set_password(row[PASSWORD_FIELD])
             changed = True
 
         if changed:
@@ -124,8 +112,8 @@ def sync_users_from_csv(csv_path):
         else:
             updated_count += 1
 
-        if row.get(PASSWORD_CHANGE_FIELD) != ('1' if require_password_change else '0'):
-            row[PASSWORD_CHANGE_FIELD] = '1' if require_password_change else '0'
+        if row.get(PASSWORD_CHANGE_FIELD) != ("1" if require_password_change else "0"):
+            row[PASSWORD_CHANGE_FIELD] = "1" if require_password_change else "0"
             csv_changed = True
 
     deleted_count = (
@@ -138,10 +126,10 @@ def sync_users_from_csv(csv_path):
         write_user_rows(csv_path, rows, fieldnames, encoding)
 
     return {
-        'created': created_count,
-        'updated': updated_count,
-        'deleted': deleted_count,
-        'encoding': encoding,
-        'path': str(csv_path),
-        'missing': False,
+        "created": created_count,
+        "updated": updated_count,
+        "deleted": deleted_count,
+        "encoding": encoding,
+        "path": str(csv_path),
+        "missing": False,
     }
