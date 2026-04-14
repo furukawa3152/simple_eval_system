@@ -5,7 +5,23 @@ cd /d "%~dp0"
 
 set "VENV_PYTHON=.venv\Scripts\python.exe"
 set "WAITRESS_EXE=.venv\Scripts\waitress-serve.exe"
-set "DJANGO_ALLOWED_HOSTS=*"
+
+if exist "deploy\app.env" (
+    for /f "usebackq tokens=1* delims==" %%A in ("deploy\app.env") do (
+        if not "%%A"=="" (
+            if /I not "%%A"=="REM" (
+                set "%%A=%%B"
+            )
+        )
+    )
+)
+
+if "%DJANGO_DEBUG%"=="" set "DJANGO_DEBUG=False"
+if "%DJANGO_SECRET_KEY%"=="" set "DJANGO_SECRET_KEY=local-dev-secret-key-change-me"
+if "%DJANGO_ALLOWED_HOSTS%"=="" set "DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost,172.16.70.20"
+if "%DJANGO_CSRF_TRUSTED_ORIGINS%"=="" set "DJANGO_CSRF_TRUSTED_ORIGINS=http://127.0.0.1:8000,http://localhost:8000,http://172.16.70.20:8000"
+if "%APP_HOST%"=="" set "APP_HOST=0.0.0.0"
+if "%APP_PORT%"=="" set "APP_PORT=8000"
 
 where python >nul 2>nul
 if errorlevel 1 (
@@ -72,11 +88,11 @@ if not exist "%WAITRESS_EXE%" (
 
 echo.
 echo Starting the app with Waitress.
-echo Open http://127.0.0.1:8000/ on this PC.
-echo From another PC, open http://THIS_PC_IP:8000/
+echo Open http://127.0.0.1:%APP_PORT%/ on this PC.
+echo From another PC, open http://172.16.70.20:%APP_PORT%/
 echo Press Ctrl+C to stop the server.
 echo.
 
-"%WAITRESS_EXE%" --listen=0.0.0.0:8000 config.wsgi:application
+"%WAITRESS_EXE%" --listen=%APP_HOST%:%APP_PORT% config.wsgi:application
 
 endlocal

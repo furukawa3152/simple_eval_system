@@ -2,12 +2,15 @@ import csv
 from datetime import datetime
 from functools import wraps
 from io import StringIO
+import re
 import time
 from urllib.parse import quote
 
 from django.contrib import messages
 from django.contrib.auth import login, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.db import connection
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 
@@ -33,6 +36,32 @@ BULK_AI_TIMEOUT_SECONDS = 90
 def get_app_setting():
     setting, _ = AppSetting.objects.get_or_create(pk=1, defaults={"current_year": datetime.now().year})
     return setting
+
+
+def get_database_display():
+    return "PostgreSQL" if connection.vendor == "postgresql" else "SQLite"
+
+
+def is_parent_department_name(department_name):
+    return not re.search(r"[（(].+[)）]", department_name or "")
+
+
+def get_manager_department_filter(department_name):
+    if not department_name:
+        return Q(pk__isnull=True)
+    if not is_parent_department_name(department_name):
+        return Q(department=department_name)
+    return (
+        Q(department=department_name)
+        | Q(department__startswith=f"{department_name}（")
+        | Q(department__startswith=f"{department_name}(")
+    )
+
+
+def get_visible_user_queryset(user):
+    if not user.is_manager:
+        return User.objects.filter(pk=user.pk)
+    return User.objects.filter(get_manager_department_filter(user.department))
 
 
 AI_FIELD_CONFIG = {
@@ -213,13 +242,16 @@ def menu_view(request):
 def export_department_csv_view(request):
     current_year = get_app_setting().current_year
     users = list(
-        User.objects.filter(department=request.user.department).order_by("username")
+        get_visible_user_queryset(request.user).order_by("department", "username")
     )
 
-    department_goal = DepartmentGoal.objects.filter(
-        department=request.user.department,
-        year=current_year,
-    ).first()
+    department_goals = {
+        item.department: item
+        for item in DepartmentGoal.objects.filter(
+            get_manager_department_filter(request.user.department),
+            year=current_year,
+        )
+    }
     personal_goals = {
         item.user_id: item
         for item in PersonalGoal.objects.filter(user__in=users, year=current_year)
@@ -272,6 +304,7 @@ def export_department_csv_view(request):
     )
 
     for user in users:
+        department_goal = department_goals.get(user.department)
         personal_goal = personal_goals.get(user.id)
         achievement = achievements.get(user.id)
         evaluation = evaluations.get(user.id)
@@ -341,6 +374,7 @@ def year_setting_view(request):
                 "title": "設定",
                 "description": "設定画面に入るには専用パスワードが必要です。",
                 "form": access_form,
+                "database_display": get_database_display(),
             },
         )
 
@@ -360,6 +394,7 @@ def year_setting_view(request):
             "description": "この画面で現在年度と各種設定を変更できます。",
             "form": form,
             "current_year": setting.current_year,
+            "database_display": get_database_display(),
         },
     )
 
@@ -473,7 +508,7 @@ def achievement_view(request):
 def evaluate_view(request):
     app_setting = get_app_setting()
     current_year = app_setting.current_year
-    evaluation_targets = User.objects.filter(department=request.user.department).order_by("username")
+    evaluation_targets = get_visible_user_queryset(request.user).order_by("department", "username")
     selected_user = None
     department_goal = None
     personal_goal = None
@@ -636,7 +671,7 @@ def evaluate_ai_generate_view(request):
     if category_key not in AI_FIELD_CONFIG:
         return JsonResponse({"ok": False, "message": "不正な評価項目です。"}, status=400)
 
-    selected_user = User.objects.filter(pk=user_id, department=request.user.department).first()
+    selected_user = get_visible_user_queryset(request.user).filter(pk=user_id).first()
     if not selected_user:
         return JsonResponse({"ok": False, "message": "対象ユーザーが見つかりません。"}, status=404)
 
