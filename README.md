@@ -152,6 +152,33 @@ Important:
 - Existing SQLite data is not copied automatically
 - `users.csv` can recreate accounts, but not historical goal/evaluation records
 
+## Forgot Password Flow
+
+If a user forgets their password, they can enter their user ID and the special password trigger on the login screen:
+
+```text
+forgotpass
+```
+
+When the trigger is used, the app:
+
+1. Marks the user as requiring a password change
+2. Logs the user in
+3. Redirects the user to the initial password change screen
+
+The default trigger is `forgotpass`.
+To change it, set this in `deploy/app.env`:
+
+```env
+FORGOT_PASSWORD_TRIGGER=your-temporary-trigger
+```
+
+Security note:
+
+- This is a simple internal reset flow for a closed network.
+- Anyone who knows a valid user ID and the trigger can enter that user's password change screen.
+- For stricter security, use an administrator-only password reset flow instead.
+
 ## Production Stack
 
 This project is prepared for:

